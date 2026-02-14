@@ -1,0 +1,51 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: frontend.dockerfile
+    image: marcusan-app-img
+    container_name: marcusan-app
+    ports:
+      - "80:80"
+    network:
+      - marcusan_network
+    depends_on:
+      - server
+
+  server:
+    build:
+      context: .
+      dockerfile: backend.dockerfile
+    image: marcusan-server-img
+    container_name: marcusan-server
+    ports:
+      - "8000:8000"
+    network:
+      - marcusan_network
+    depends_on:
+      - postgres_db
+  
+  postgres_db:
+    image: pgvector/pgvector:pg17
+    container_name: marcusan-pgdb
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5302:5302"
+    network:
+      - marcusan_network
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+
+volumes:
+  pgdata:
+    name: marcusan-pgdata
+
+network:
+  marcusan_network:
+    name: marcusan-network
+    driver: bridge
