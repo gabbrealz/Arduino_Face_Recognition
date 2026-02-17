@@ -23,7 +23,8 @@ services:
     network:
       - marcusan_network
     depends_on:
-      - postgres_db
+      postgres_db:
+        condition: service_healthy
   
   postgres_db:
     image: pgvector/pgvector:pg17
@@ -40,6 +41,17 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10shealthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   pgdata:
