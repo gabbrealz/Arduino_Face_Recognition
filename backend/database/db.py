@@ -17,6 +17,17 @@ class DB:
         password=DB_PASSWORD
     )
 
+    @staticmethod
+    def reconnect():
+        DB.conn.close()
+        DB.conn = psycopg.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD
+        )
+
     
     @staticmethod
     def get_matching_face(embedding, threshold):
