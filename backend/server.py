@@ -6,18 +6,36 @@ CONTEXT_PATH = os.getenv("CONTEXT_PATH", "/marcusan-attendance")
 
 from fastapi import FastAPI, Request, Response, status
 from contextlib import asynccontextmanager
+from time import time
 import asyncio
 import uvicorn
+import logging
 import argparse
 
 # =================================================================================================
 # APP CONTEXT =====================================================================================
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan, root_path=CONTEXT_PATH)
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Incoming request: [{request.method}] {request.url.path}")
+    start_time = time()
+    response = await call_next(request)
+    logger.info(f"Response status: [{time()-start_time:.2f} secs] {response.status_code}")
+    return response
+
+# =================================================================================================
+# API ENDPOINTS ===================================================================================
+
+
 
 # =================================================================================================
 # RUN THE APP =====================================================================================
