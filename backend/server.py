@@ -30,9 +30,12 @@ app = FastAPI(lifespan=lifespan, root_path=CONTEXT_PATH)
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     logger.info(f"Incoming request: [{request.method}] {request.url.path}")
+
     start_time = time()
     response = await call_next(request)
-    logger.info(f"Response status: [{time()-start_time:.2f} secs] {response.status_code}")
+    time_taken = time()-start_time
+    
+    logger.info(f"Response status: [{time_taken:.2f} secs] {response.status_code}")
     return response
 
 # =================================================================================================
