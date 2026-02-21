@@ -27,7 +27,7 @@ CREATE TABLE public.face_embeddings (
 CREATE TABLE public.attendance_logs (
     id BIGSERIAL,
     student_id BIGINT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT attendance_logs_pkey PRIMARY KEY (id),
     CONSTRAINT attendance_log_to_student_fkey FOREIGN KEY (student_id)
