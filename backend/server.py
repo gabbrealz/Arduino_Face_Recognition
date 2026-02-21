@@ -29,7 +29,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     uvicorn.run("server:app", host=args.host, port=args.port)
-
-# =================================================================================================
-#67676767676767676767676767676767676767676767676767676767676767676767676767676767676767676767676767
-#HAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHA
