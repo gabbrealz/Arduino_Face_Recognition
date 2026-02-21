@@ -12,6 +12,9 @@ import uvicorn
 import logging
 import argparse
 
+from database.db import DB
+from models.request import CreateStudentRequestBody
+
 # =================================================================================================
 # APP CONTEXT =====================================================================================
 
@@ -35,15 +38,17 @@ async def log_requests(request: Request, call_next):
 # =================================================================================================
 # API ENDPOINTS ===================================================================================
 
-
+@app.post("/students")
+async def create_student(data: CreateStudentRequestBody):
+    pass
 
 # =================================================================================================
 # RUN THE APP =====================================================================================
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
     
     uvicorn.run("server:app", host=args.host, port=args.port)
