@@ -19,13 +19,13 @@ class DB:
 
 
     @staticmethod
-    def students():
+    def get_students():
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 return cur.execute("SELECT id, student_number, full_name, student_email FROM public.students").fetchall()
 
     @staticmethod
-    def student(student_id):
+    def get_student(student_id):
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 return cur.execute(
@@ -42,7 +42,7 @@ class DB:
     
 
     @staticmethod
-    def attendance_logs():
+    def get_attendance_logs():
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 return cur.execute("""
@@ -61,7 +61,7 @@ class DB:
 
 
     @staticmethod
-    def face_embeddings():
+    def get_face_embeddings():
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 return cur.execute("SELECT * FROM public.face_embeddings").fetchall()
