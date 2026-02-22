@@ -24,7 +24,7 @@ services:
       DEEPFACE_HOME: /app/deepface
     ports:
       - "8000:8000"
-    network:
+    networks:
       - marcusan_network
     volumes:
       - deepface:/app/deepface
@@ -40,7 +40,7 @@ services:
       - ./backend/.env
     ports:
       - "5432:5432"
-    network:
+    networks:
       - marcusan_network
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -58,7 +58,7 @@ volumes:
   deepface:
     name: marcusan-deepface-data
 
-network:
+networks:
   marcusan_network:
     name: marcusan-network
     driver: bridge
