@@ -17,7 +17,13 @@ class DB:
     def log_attendance_for_face(embedding, threshold):
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
-                return cur.execute("SELECT log_attendance_for_face(%s, %s)", (embedding, threshold)).fetchone()
+                return cur.execute("SELECT * FROM log_attendance_for_face(%s, %s)", (embedding, threshold)).fetchone()
+
+    @staticmethod
+    def register_face(embedding):
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                return cur.execute("SELECT register_face(%s)", (embedding,)).fetchone()
 
 
     @staticmethod
@@ -32,7 +38,7 @@ class DB:
             with conn.cursor() as cur:
                 return cur.execute(
                     "SELECT id, student_number, full_name, student_email FROM public.students WHERE id = %s LIMIT 1", 
-                    (student_id)).fetchone()
+                    (student_id,)).fetchone()
 
     @staticmethod
     def insert_student(student_number, full_name, student_email):
@@ -59,7 +65,7 @@ class DB:
             with conn.cursor() as cur:
                 cur.execute(
                     "INSERT INTO public.attendance_logs (student_id) VALUES (%s)",
-                    (student_id))
+                    (student_id,))
 
 
     @staticmethod
