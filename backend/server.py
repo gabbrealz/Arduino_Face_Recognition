@@ -34,13 +34,13 @@ app = FastAPI(lifespan=lifespan, root_path=CONTEXT_PATH)
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    logger.info(f"Incoming request: [{request.method}] {request.url.path}")
+    logger.info(f"Request: [{request.method}] {request.url.path}")
 
     start_time = time()
     response = await call_next(request)
     time_taken = time()-start_time
 
-    logger.info(f"Response status: [{time_taken:.2f} secs] {response.status_code}")
+    logger.info(f"Response: [{response.status_code}][{time_taken:.2f} secs] {request.url.path}s")
     return response
 
 # =================================================================================================
@@ -59,6 +59,7 @@ async def get_embedding(img_bytes):
 async def get_students():
     students = DB.get_students()
     if not students:
+        logger.info("Get all students [NO STUDENTS FOUND]")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No students found")
     return students
 
@@ -67,6 +68,7 @@ async def create_student(req_body: CreateStudentRequestBody):
     try:
         DB.insert_student(req_body.student_number, req_body.name, req_body.email)
     except UniqueViolation as err:
+        logger.info(f"Create student w/ email: {req_body.email} [UNIQUE CONSTRAINT VIOLATED]")
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Student number or email already exists")
     return {"message": "Student registered successfully"}
 
@@ -75,12 +77,14 @@ async def register_face(student_number: str, request: Request):
     img_bytes = await request.body()
 
     if not img_bytes:
+        logger.info(f"Register face for: {student_number} [NO IMAGE DATA]")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image data is required")
 
     embedding = await get_embedding(img_bytes)
     face_registered = DB.register_face(student_number, embedding)
 
     if not face_registered:
+        logger.info(f"Register face for: {student_number} [NO IMAGE DATA]")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
 
     return {"message": "Face registered successfully"}
@@ -90,6 +94,7 @@ async def register_face(student_number: str, request: Request):
 async def get_attendance_logs():
     logs = DB.get_attendance_logs()
     if not logs:
+        logger.info("Get all attendancec logs [NO LOGS FOUND]")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No attendance logs found")
     return logs
 
@@ -98,12 +103,14 @@ async def log_student_attendance(request: Request):
     img_bytes = await request.body()
 
     if not img_bytes:
+        logger.info("Log student attendance [NO IMAGE DATA]")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image data is required")
 
     embedding = await get_embedding(img_bytes)
     student_record = DB.log_attendance_for_face(embedding, 0.4)
 
     if not student_record:
+        logger.info("Log student attendance [NO STUDENT MATCHES THE IMAGE]")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="The image does not match any registered student"
