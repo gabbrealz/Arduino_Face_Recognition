@@ -26,8 +26,6 @@ CREATE TABLE public.face_embeddings (
     ON UPDATE CASCADE
     ON DELETE CASCADE
 );
-CREATE INDEX ON public.face_embeddings USING ivfflat (embedding vector_cosine_ops);
-ANALYZE public.face_embeddings;
 
 
 CREATE TABLE public.attendance_logs (
