@@ -18,10 +18,16 @@ services:
       dockerfile: backend.dockerfile
     image: marcusan-server-img
     container_name: marcusan-server
+    env_file:
+      - ./backend/.env
+    environment:
+      DEEPFACE_HOME: /app/deepface
     ports:
       - "8000:8000"
     network:
       - marcusan_network
+    volumes:
+      - deepface:/app/deepface
     depends_on:
       postgres_db:
         condition: service_healthy
@@ -30,12 +36,10 @@ services:
     image: pgvector/pgvector:pg17
     container_name: marcusan-pgdb
     restart: always
-    environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    env_file:
+      - ./backend/.env
     ports:
-      - "5302:5302"
+      - "5432:5432"
     network:
       - marcusan_network
     volumes:
@@ -56,6 +60,8 @@ services:
 volumes:
   pgdata:
     name: marcusan-pgdata
+  deepface:
+    name: marcusan-deepface-data
 
 network:
   marcusan_network:
