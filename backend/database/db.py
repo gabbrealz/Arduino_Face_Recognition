@@ -51,6 +51,7 @@ class DB:
                 cur.execute(
                     "INSERT INTO public.students (student_number, full_name, student_email) VALUES (%s, %s, %s)",
                     (student_number, full_name, student_email))
+            conn.commit()
     
 
     @staticmethod
@@ -71,3 +72,4 @@ class DB:
                 cur.execute(
                     "INSERT INTO public.attendance_logs (student_id) VALUES (%s)",
                     (student_id,))
+            conn.commit()
