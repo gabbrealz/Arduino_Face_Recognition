@@ -21,15 +21,6 @@ from database.db import DB
 from models.request import CreateStudentRequestBody
 
 # =================================================================================================
-# HELPER FUNCTIONS ================================================================================
-
-async def get_embedding(img_bytes):
-    img_nparr = np.frombuffer(img_bytes, np.uint8)
-    img = cv2.imdecode(img_nparr, cv2.IMREAD_COLOR)
-    result = await asyncio.to_thread(DeepFace.represent, img, model_name="ArcFace")
-    return result[0]["embedding"]
-
-# =================================================================================================
 # APP CONTEXT =====================================================================================
 
 logging.basicConfig(level=logging.INFO)
@@ -51,6 +42,15 @@ async def log_requests(request: Request, call_next):
 
     logger.info(f"Response status: [{time_taken:.2f} secs] {response.status_code}")
     return response
+
+# =================================================================================================
+# HELPER FUNCTIONS ================================================================================
+
+async def get_embedding(img_bytes):
+    img_nparr = np.frombuffer(img_bytes, np.uint8)
+    img = cv2.imdecode(img_nparr, cv2.IMREAD_COLOR)
+    result = await asyncio.to_thread(DeepFace.represent, img, model_name="ArcFace")
+    return result[0]["embedding"]
 
 # =================================================================================================
 # API ENDPOINTS ===================================================================================
