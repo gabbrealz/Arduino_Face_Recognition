@@ -70,7 +70,7 @@ async def create_student(req_body: CreateStudentRequestBody):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Student number or email already exists")
     return {"message": "Student registered successfully"}
 
-@app.post("/register-face/{student_number}", status_code=status.HTTP_201_CREATED)
+@app.post("/students/{student_number}/register-face", status_code=status.HTTP_201_CREATED)
 async def register_face(student_number: str, request: Request):
     img_bytes = await request.body()
 
@@ -86,17 +86,17 @@ async def register_face(student_number: str, request: Request):
     return {"message": "Face registered successfully"}
 
 
-@app.get("/attendance-logs", status_code=status.HTTP_200_OK)
+@app.get("/students/attendance", status_code=status.HTTP_200_OK)
 async def get_attendance_logs():
     logs = DB.get_attendance_logs()
     if not logs:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No attendance logs found")
     return logs
 
-@app.post("/attendance-logs", status_code=status.HTTP_200_OK)
+@app.post("/students/attendance", status_code=status.HTTP_200_OK)
 async def log_student_attendance(request: Request):
     img_bytes = await request.body()
-    
+
     if not img_bytes:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image data is required")
 
