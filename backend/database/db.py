@@ -1,7 +1,5 @@
 import os
-import psycopg
 from psycopg_pool import ConnectionPool
-from datetime import datetime
 
 DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
 DB_NAME = os.getenv("POSTGRES_DB", "AttendanceSystem")
@@ -12,10 +10,10 @@ class DB:
     pool = ConnectionPool(f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}")
 
     @staticmethod
-    def get_matching_face(embedding, threshold):
+    def log_attendance_for_face(embedding, threshold):
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
-                return cur.execute("SELECT get_matching_face(%s, %s)", (embedding, threshold)).fetchone()
+                return cur.execute("SELECT log_attendance_for_face(%s, %s)", (embedding, threshold)).fetchone()
 
 
     @staticmethod
@@ -56,8 +54,8 @@ class DB:
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO public.attendance_logs (student_id, created_at) VALUES (%s, %s)",
-                    (student_id, datetime.now()))
+                    "INSERT INTO public.attendance_logs (student_id) VALUES (%s)",
+                    (student_id))
 
 
     @staticmethod
