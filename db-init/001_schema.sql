@@ -11,7 +11,7 @@ CREATE TABLE public.students (
     CONSTRAINT student_number_pattern CHECK (student_number ~ '^\d{4}-\d{3}-\d{3}$'),
     CONSTRAINT unique_student_number UNIQUE (student_number),
     CONSTRAINT unique_email UNIQUE (student_email),
-    CONSTRAINT email_pattern CHECK (student_email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$')
+    CONSTRAINT email_pattern CHECK (student_email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 );
 
 

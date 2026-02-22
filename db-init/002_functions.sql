@@ -34,7 +34,7 @@ BEGIN
     FROM public.students
     WHERE student_number = p_student_number;
 
-    IF v_student_id IS NULL THEN
+    IF v_student_id IS NOT NULL THEN
         INSERT INTO public.face_embeddings (embedding, student_id)
         VALUES (p_embedding, v_student_id);
         RETURN TRUE;

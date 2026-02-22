@@ -3,27 +3,27 @@ import psycopg
 from psycopg_pool import ConnectionPool
 from psycopg.rows import dict_row
 
-DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
-DB_NAME = os.getenv("POSTGRES_DB", "AttendanceSystem")
+DB_HOST = os.getenv("PGDB_HOST", "localhost")
+DB_NAME = os.getenv("POSTGRES_DB", "postgres")
 DB_USER = os.getenv("POSTGRES_USER", "postgres")
 DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
 
 class DB:
-    dsn = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+    dsn = f"dbname={DB_NAME} user={DB_USER} password={DB_PASSWORD} host={DB_HOST} port=5432"
     pool = ConnectionPool(conninfo=dsn, kwargs={"row_factory": dict_row})
 
     @staticmethod
     def log_attendance_for_face(embedding, threshold):
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT * FROM log_attendance_for_face(%s, %s)", (embedding, threshold))
+                cur.execute("SELECT * FROM log_attendance_for_face(%s::vector, %s)", (embedding, threshold))
                 return cur.fetchone()
 
     @staticmethod
-    def register_face(embedding):
+    def register_face(student_number, embedding):
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT register_face(%s)", (embedding,))
+                cur.execute("SELECT register_face(%s, %s::vector)", (student_number, embedding))
                 return cur.fetchone()["register_face"]
 
 
