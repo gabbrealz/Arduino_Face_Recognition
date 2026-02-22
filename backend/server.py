@@ -47,9 +47,21 @@ async def log_requests(request: Request, call_next):
 # =================================================================================================
 # HELPER FUNCTIONS ================================================================================
 
-async def get_embedding(img_bytes):
+def get_decoded_img(img_bytes):
     img_nparr = np.frombuffer(img_bytes, np.uint8)
     img = cv2.imdecode(img_nparr, cv2.IMREAD_COLOR)
+
+async def image_is_valid(img):
+    faces = await asyncio.to_thread(
+        DeepFace.extract_faces,
+        detector_backend="retinaface",
+        enforce_detection=False,
+        anti_spoofing=True)
+
+    if len(faces) > 0: return True
+    return False
+
+async def get_embedding(img):
     result = await asyncio.to_thread(DeepFace.represent, img, model_name="ArcFace")
     return result[0]["embedding"]
 
@@ -85,7 +97,17 @@ async def register_face(student_number: str, request: Request):
         logger.info(f"Register face for: {student_number} [NO IMAGE DATA]")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image data is required")
 
-    embedding = await get_embedding(img_bytes)
+    img = get_decoded_img(img_bytes)
+    is_valid_img = await image_is_valid(img)
+
+    if not is_valid_img:
+        logger.info("Log student attendance [NO IMAGE DATA]")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Image is invalid. Please try again"
+        )
+    
+    embedding = await get_embedding(img)
 
     try:
         face_registered = DB.register_face(student_number, embedding)
@@ -139,7 +161,17 @@ async def log_student_attendance(request: Request):
         logger.info("Log student attendance [NO IMAGE DATA]")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image data is required")
 
-    embedding = await get_embedding(img_bytes)
+    img = get_decoded_img(img_bytes)
+    is_valid_img = await image_is_valid(img)
+
+    if not is_valid_img:
+        logger.info("Log student attendance [IMAGE IS INVALID]")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Image is invalid. Please try again"
+        )
+    
+    embedding = await get_embedding(img)
 
     try:
         student_record = DB.log_attendance_for_face(embedding, 0.4)
