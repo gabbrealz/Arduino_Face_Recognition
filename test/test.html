@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP32-CAM Stream</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            background: #111;
+            color: white;
+        }
+        img {
+            margin-top: 20px;
+            border: 3px solid white;
+            width: 480px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h2>ESP32-CAM Live Stream</h2>
+
+<button onclick="startStream()">Start Stream</button>
+<button onclick="stopStream()">Stop Stream</button>
+
+<br>
+<img id="streamImage" />
+
+<script>
+    const brokerUrl = "ws://YOUR_MQTT_SERVER_IP:9001";
+    const client = mqtt.connect(brokerUrl);
+
+    let receiving = false;
+    let imageChunks = [];
+
+    client.on("connect", () => {
+        console.log("Connected to MQTT");
+        client.subscribe("camera/stream");
+    });
+
+    client.on("message", (topic, message) => {
+
+        if (message.toString() === "START") {
+            receiving = true;
+            imageChunks = [];
+            return;
+        }
+
+        if (message.toString() === "END") {
+            receiving = false;
+
+            const blob = new Blob(imageChunks, { type: "image/jpeg" });
+            const imageUrl = URL.createObjectURL(blob);
+
+            document.getElementById("streamImage").src = imageUrl;
+            return;
+        }
+
+        if (receiving) {
+            imageChunks.push(message);
+        }
+    });
+
+    function startStream() {
+        client.publish("esp32/capture", "STREAM ON");
+    }
+
+    function stopStream() {
+        client.publish("esp32/capture", "STREAM OFF");
+    }
+</script>
+
+</body>
+</html>

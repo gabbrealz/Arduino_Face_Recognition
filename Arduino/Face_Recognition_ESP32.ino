@@ -1,4 +1,4 @@
-#define MQTT_MAX_PACKET_SIZE 4096
+#define MQTT_MAX_PACKET_SIZE 2048
 
 #include "esp_camera.h"
 #include "board_config.h"
