@@ -34,7 +34,7 @@
 <img id="streamImage" />
 
 <script>
-    const brokerUrl = "ws://YOUR_MQTT_SERVER_IP:9001";
+    const brokerUrl = "ws://localhost:9001";
     const client = mqtt.connect(brokerUrl);
 
     let receiving = false;
@@ -47,20 +47,25 @@
 
     client.on("message", (topic, message) => {
 
-        if (message.toString() === "START") {
-            receiving = true;
-            imageChunks = [];
-            return;
-        }
+        // Only treat VERY SMALL payloads as control signals
+        if (message.length <= 5) {
+            const text = message.toString();
 
-        if (message.toString() === "END") {
-            receiving = false;
+            if (text === "START") {
+                receiving = true;
+                imageChunks = [];
+                return;
+            }
 
-            const blob = new Blob(imageChunks, { type: "image/jpeg" });
-            const imageUrl = URL.createObjectURL(blob);
+            if (text === "END") {
+                receiving = false;
 
-            document.getElementById("streamImage").src = imageUrl;
-            return;
+                const blob = new Blob(imageChunks, { type: "image/jpeg" });
+                const imageUrl = URL.createObjectURL(blob);
+
+                document.getElementById("streamImage").src = imageUrl;
+                return;
+            }
         }
 
         if (receiving) {
