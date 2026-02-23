@@ -25,7 +25,6 @@ class Face:
                 enforce_detection=True,
                 anti_spoofing=True
             )
-            print(faces)
             return any(face.get("is_real", False) for face in faces)
 
         except ValueError:
