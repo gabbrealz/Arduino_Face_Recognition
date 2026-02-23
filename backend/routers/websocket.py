@@ -1,4 +1,4 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket
 from services.connection_manager import manager
 
 router = APIRouter()
@@ -16,29 +16,9 @@ async def websocket_endpoint(websocket: WebSocket):
             if message["type"] == "websocket.disconnect":
                 break
 
-            text = message.get("text")
             data = message.get("bytes")
-
-            if text is not None:
-                if text == "START":
-                    receiving_image = True
-                    image_chunks = []
-                    continue
-                elif text == "END":
-                    receiving_image = False
-                    full_image = b"".join(image_chunks)
-
-                    await manager.broadcast_bytes(full_image, websocket)
-                    continue
-                elif text == "ARDUINO":
-                    manager.promote_to_arduino(websocket)
-
-                elif text == "CAPTURE":
-                    print("Sent to arduino")
-                    manager.send_to_arduino("CAPTURE")
-
-            elif data is not None and receiving_image:
-                image_chunks.append(data)
+            if data is not None:
+                await manager.broadcast_bytes(data, websocket)
 
     finally:
         manager.disconnect(websocket)

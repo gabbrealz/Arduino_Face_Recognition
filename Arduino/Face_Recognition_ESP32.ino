@@ -48,8 +48,8 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
 
 void sendImageData() {
   camera_fb_t * fb = NULL;
-  fb = esb_camera_fb_get();
-  esp_camera_fb_return();
+  fb = esp_camera_fb_get();
+  esp_camera_fb_return(fb);
 
   fb = NULL;
   fb = esp_camera_fb_get();
