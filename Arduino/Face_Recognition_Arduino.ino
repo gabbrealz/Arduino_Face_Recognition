@@ -66,8 +66,9 @@ void loop() {
       lcd.print("Camera Error");
       errorTone();
       delay(2000);
-      lcd.clear();
       digitalWrite(RED_LED, LOW);
+      lcd.clear();
+      lcd.print("Ready");
       return;
     }
 
@@ -87,6 +88,7 @@ void loop() {
 
       delay(3000);
       lcd.clear();
+      lcd.print("Ready");
       digitalWrite(GREEN_LED, LOW);
     }
 
@@ -105,6 +107,7 @@ void loop() {
 
       delay(3000);
       lcd.clear();
+      lcd.print("Ready");
       digitalWrite(RED_LED, LOW);
     }
 
