@@ -1,11 +1,77 @@
+#define MQTT_MAX_PACKET_SIZE 4096
+
 #include "esp_camera.h"
 #include "board_config.h"
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+const char* ssid = "YOUR_WIFI";
+const char* password = "YOUR_PASSWORD";
+
+const char* mqtt_server = "IP_HOSTING_MQTT_SERVER";
+const int mqtt_port = 1883;
+
+WiFiClient wifi;
+PubSubClient client(wifi);
+
+bool stream = false;
+
+void connectWiFi() {
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+}
+
+void connectMQTT() {
+  while (!client.connected()) {
+    if (client.connect("esp32cam")) {
+      client.subscribe("esp32/capture");
+    } else {
+      delay(2000);
+    }
+  }
+}
+
+void sendImageData(char* topic) {
+  camera_fb_t * fb = esp_camera_fb_get();
+  if (!fb) return;
+  
+  client.publish(topic, "START");
+
+  const size_t chunkSize = 1024;
+
+  for (size_t i = 0; i < fb->len; i += chunkSize) {
+    size_t len = (i + chunkSize > fb->len) ? fb->len - i : chunkSize;
+    client.publish(topic, fb->buf + i, len);
+    delay(10);
+  }
+
+  client.publish(topic, "END");
+  esp_camera_fb_return(fb);
+}
+
+void mqttCallback(char* topic, byte* payload, unsigned int length) {
+
+  String cmd;
+  for (unsigned int i = 0; i < length; i++) {
+    cmd += (char)payload[i];
+  }
+
+  if (cmd == "CAPTURE") {
+    sendImageData("camera/capture");
+  }
+  else if (cmd == "STREAM ON") {
+    stream = true;
+  }
+  else if (cmd == "STREAM OFF") {
+    stream = false;
+  }
+
+}
 
 void setup() {
   Serial.begin(115200);
-  Serial.println();
-
-  randomSeed(micros());
 
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
@@ -33,59 +99,27 @@ void setup() {
 
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
+  config.frame_size = FRAMESIZE_HQVGA;
+  config.jpeg_quality = 15;
+  config.fb_count = psramFound() ? 2 : 1;
 
-  config.frame_size = FRAMESIZE_QVGA;
-  config.jpeg_quality = 12;
-  config.fb_count = 1;
+  esp_camera_init(&config);
 
-  if (psramFound()) {
-    config.fb_count = 2;
-  }
+  connectWiFi();
 
-  esp_err_t err = esp_camera_init(&config);
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(mqttCallback);
 
-  if (err != ESP_OK) {
-    Serial.println("Camera init failed");
-    return;
-  }
-
-  Serial.println("ESP32-CAM Ready");
+  connectMQTT();
 }
 
 void loop() {
-
-  if (Serial.available()) {
-
-    String cmd = Serial.readStringUntil('\n');
-    cmd.trim();
-
-    if (cmd == "CAPTURE") {
-
-      camera_fb_t * fb = esp_camera_fb_get();
-
-      if (!fb) {
-        Serial.println("UNKNOWN");
-        return;
-      }
-
-      String result = recognizeFace();
-
-      Serial.println(result);
-
-      esp_camera_fb_return(fb);
-    }
+  if (!client.connected()) {
+    connectMQTT();
   }
-}
-
-String recognizeFace() {
-
-  // TEMPORARY TEST
-  int r = random(0, 2);
-
-  if (r == 1) {
-    return "Juan Dela Cruz";
-  } else {
-    return "UNKNOWN";
+  else if (stream) {
+    sendImageData("camera/stream")
   }
 
+  client.loop();
 }
