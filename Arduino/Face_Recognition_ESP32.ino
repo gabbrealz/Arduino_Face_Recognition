@@ -1,16 +1,16 @@
 #include "esp_camera.h"
 #include "board_config.h"
 #include <WiFi.h>
-#include <WebsocketClient.h>
+#include <WebSocketsClient.h>
 
-const char* ssid = "PLDTHOMEFIBRadtqk";
-const char* password = "Pogs_12345678";
+const char* ssid = "PLDTHOMEFIBRM764a";
+const char* password = "AgotPerez@25";
 
-const char* mqtt_server = "192.168.1.206";
+const char* ws_server = "192.168.1.168";
 const uint16_t ws_port = 8000;
 
-WebsocketsClient ws;
-bool wsConnected = false;
+WebSocketsClient ws;
+bool stream = false;
 
 void connectWiFi() {
   WiFi.begin(ssid, password);
@@ -46,7 +46,7 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   }
 }
 
-void sendImageData(char* topic) {
+void sendImageData() {
   camera_fb_t * fb = esp_camera_fb_get();
   if (!fb) {
     Serial.println("Camera capture failed");
@@ -55,11 +55,19 @@ void sendImageData(char* topic) {
 
   ws.sendTXT("START");
 
-  const size_t chunkSize = 512;
+  const size_t chunkSize = 1024;
   for (size_t i = 0; i < fb->len; i += chunkSize) {
+
+    if (!ws.isConnected()) {
+      esp_camera_fb_return(fb);
+      return;
+    }
+
     size_t len = (i + chunkSize < fb->len) ? chunkSize : (fb->len - i);
+
     ws.sendBIN(fb->buf + i, len);
-    delay(1);
+
+    delay(2);
     ws.loop();
   }
 
@@ -96,9 +104,9 @@ void setup() {
 
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
+  config.jpeg_quality = 12;
+  config.fb_count = 2;
   config.frame_size = FRAMESIZE_QQVGA;
-  config.jpeg_quality = 20;
-  config.fb_count = 1;
 
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
@@ -108,15 +116,37 @@ void setup() {
 
   connectWiFi();
 
-  websocketClient.begin(mqtt_server, ws_port, "/");
-  websocketClient.onEvent(webSocketEvent);
+  ws.begin(ws_server, ws_port, "/ws");
+  ws.enableHeartbeat(15000, 3000, 2);
+  ws.onEvent(webSocketEvent);
+  ws.setReconnectInterval(5000);
 }
 
 void loop() {
-  webSocketClient.loop();
+  ws.loop();
+
+  if (Serial.available()) {
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
+
+    if (cmd == "CAPTURE") {
+      Serial.println("Capturing image...");
+      sendImageData();
+    }
+
+    if (cmd == "STREAM ON") {
+      stream = true;
+      Serial.println("Stream enabled");
+    }
+
+    if (cmd == "STREAM OFF") {
+      stream = false;
+      Serial.println("Stream disabled");
+    }
+  }
 
   if (stream) {
     sendImageData();
-    delay(100);
+    delay(700);
   }
 }
