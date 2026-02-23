@@ -8,7 +8,7 @@ MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = os.getenv("MQTT_PORT", "1883")
 
 from fastapi import FastAPI, Request
-from asyncio_mqtt import Client
+from gmqtt import Client as MQTTClient
 from contextlib import asynccontextmanager
 from time import time
 import asyncio
@@ -21,18 +21,33 @@ from routes import students, attendance
 from database.db import DB
 
 # =================================================================================================
+# MQTT CLIENT =====================================================================================
+
+def on_connect(client, flags, rc, properties):
+    print("Connected to MQTT")
+    client.subscribe("camera/feed")
+
+def on_message(client, topic, payload, qos, properties):
+    print(f"Received on {topic}")
+
+def on_disconnect(client, packet, exc=None):
+    logger.info("Disconnected from MQTT")
+
+# =================================================================================================
 # APP CONTEXT =====================================================================================
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.mqtt_client = Client(MQTT_BROKER, MQTT_PORT)
-    await app.state.mqtt_client.connect()
-    task = asyncio.create_task(listen_to_topics())
+    client = MQTTClient("fastapi-client")
+    client.on_connect = on_connect
+    client.on_message = on_message
+    client.on_disconnect = on_disconnect
+    await client.connect(MQTT_BROKER, MQTT_PORT)
+    app.state.mqtt_client = client
 
     yield
 
-    task.cancel()
-    await app.state.mqtt_client.disconnect()
+    await client.disconnect()
 
 app = FastAPI(lifespan=lifespan, root_path=CONTEXT_PATH)
 
@@ -52,16 +67,6 @@ async def log_requests(request: Request, call_next):
 
 app.include_router(students.router, prefix="/students")
 app.include_router(attendance.router, prefix="/attendance")
-
-# =================================================================================================
-# MQTT CLIENT =====================================================================================
-
-async def listen_to_topics():
-    async with app.state.mqtt_client.unfiltered_messages() as messages:
-        await app.state.mqtt_client.subscribe("camera/feed")
-
-        async for message in messages:
-            print(f"Received image")
 
 # =================================================================================================
 # RUN THE APP =====================================================================================
