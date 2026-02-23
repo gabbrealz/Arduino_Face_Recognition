@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>ESP32-CAM Stream</title>
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
         body {
             font-family: Arial;
@@ -25,55 +24,75 @@
 </head>
 <body>
 
-<h2>ESP32-CAM Live Stream</h2>
+<h2>ESP32-CAM Live Stream (WebSocket)</h2>
 
 <button onclick="startStream()">Start Stream</button>
 <button onclick="stopStream()">Stop Stream</button>
+<button onclick="singleCapture()">Capture Once</button>
 
 <br>
 <img id="streamImage" />
 
 <script>
-    const brokerUrl = "ws://YOUR_MQTT_SERVER_IP:9001";
-    const client = mqtt.connect(brokerUrl);
+    const ws = new WebSocket("ws://localhost:8000/ws");
 
     let receiving = false;
     let imageChunks = [];
 
-    client.on("connect", () => {
-        console.log("Connected to MQTT");
-        client.subscribe("camera/stream");
-    });
+    ws.binaryType = "arraybuffer";
 
-    client.on("message", (topic, message) => {
+    ws.onopen = () => {
+        console.log("Connected to WebSocket");
+    };
 
-        if (message.toString() === "START") {
-            receiving = true;
-            imageChunks = [];
+    ws.onmessage = (event) => {
+
+        // TEXT MESSAGE (START / END)
+        if (typeof event.data === "string") {
+
+            if (event.data === "START") {
+                receiving = true;
+                imageChunks = [];
+                return;
+            }
+
+            if (event.data === "END") {
+                receiving = false;
+
+                const blob = new Blob(imageChunks, { type: "image/jpeg" });
+                const imageUrl = URL.createObjectURL(blob);
+
+                document.getElementById("streamImage").src = imageUrl;
+                return;
+            }
+
             return;
         }
 
-        if (message.toString() === "END") {
-            receiving = false;
-
-            const blob = new Blob(imageChunks, { type: "image/jpeg" });
-            const imageUrl = URL.createObjectURL(blob);
-
-            document.getElementById("streamImage").src = imageUrl;
-            return;
-        }
-
+        // BINARY CHUNK
         if (receiving) {
-            imageChunks.push(message);
+            imageChunks.push(event.data);
         }
-    });
+    };
+
+    ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+    };
+
+    ws.onclose = () => {
+        console.log("WebSocket closed");
+    };
 
     function startStream() {
-        client.publish("esp32/capture", "STREAM ON");
+        ws.send("STREAM ON");
     }
 
     function stopStream() {
-        client.publish("esp32/capture", "STREAM OFF");
+        ws.send("STREAM OFF");
+    }
+
+    function singleCapture() {
+        ws.send("CAPTURE");
     }
 </script>
 

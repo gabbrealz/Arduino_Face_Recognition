@@ -7,7 +7,8 @@ CONTEXT_PATH = os.getenv("CONTEXT_PATH", "/marcusan-attendance")
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = os.getenv("MQTT_PORT", "1883")
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from gmqtt import Client as MQTTClient
 from contextlib import asynccontextmanager
 from time import time
@@ -17,7 +18,7 @@ import logging
 import argparse
 
 from services.log import logger
-from routes import students, attendance
+from routers import students, attendance, websocket
 from database.db import DB
 
 # =================================================================================================
@@ -51,6 +52,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, root_path=CONTEXT_PATH)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     logger.info(f"Request: [{request.method}] {request.url.path}")
@@ -67,6 +76,7 @@ async def log_requests(request: Request, call_next):
 
 app.include_router(students.router, prefix="/students")
 app.include_router(attendance.router, prefix="/attendance")
+app.include_router(websocket.router, prefix="/ws")
 
 # =================================================================================================
 # RUN THE APP =====================================================================================
