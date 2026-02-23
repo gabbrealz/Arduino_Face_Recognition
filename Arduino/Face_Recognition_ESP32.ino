@@ -1,16 +1,16 @@
 #include "esp_camera.h"
 #include "board_config.h"
 #include <WiFi.h>
-#include <WebsocketClient.h>
+#include <WebSocketsClient.h>
 
-const char* ssid = "PLDTHOMEFIBRadtqk";
-const char* password = "Pogs_12345678";
+const char* ssid = "PLDTHOMEFIBRM764a";
+const char* password = "AgotPerez@25";
 
-const char* mqtt_server = "192.168.1.206";
+const char* ws_server = "192.168.1.168";
 const uint16_t ws_port = 8000;
 
-WebsocketsClient ws;
-bool wsConnected = false;
+WebSocketsClient ws;
+bool stream = false;
 
 void connectWiFi() {
   WiFi.begin(ssid, password);
@@ -28,6 +28,7 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       break;
     case WStype_CONNECTED:
       Serial.println("WebSocket Connected");
+      ws.sendTXT("ARDUINO");
       break;
     case WStype_TEXT: {
       String cmd = String((char*)payload).substring(0, length);
@@ -46,7 +47,7 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   }
 }
 
-void sendImageData(char* topic) {
+void sendImageData() {
   camera_fb_t * fb = esp_camera_fb_get();
   if (!fb) {
     Serial.println("Camera capture failed");
@@ -61,6 +62,7 @@ void sendImageData(char* topic) {
     ws.sendBIN(fb->buf + i, len);
     delay(1);
     ws.loop();
+    Serial.println("Sent");
   }
 
   ws.sendTXT("END");
@@ -108,12 +110,13 @@ void setup() {
 
   connectWiFi();
 
-  websocketClient.begin(mqtt_server, ws_port, "/");
-  websocketClient.onEvent(webSocketEvent);
+  ws.begin(ws_server, ws_port, "/ws");
+  ws.onEvent(webSocketEvent);
+  ws.setReconnectInterval(5000);
 }
 
 void loop() {
-  webSocketClient.loop();
+  ws.loop();
 
   if (stream) {
     sendImageData();
