@@ -4,21 +4,35 @@ from services.connection_manager import ConnectionManager
 router = APIRouter()
 manager = ConnectionManager()
 
-@router.websocket("/")
+@router.websocket("")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
+
     try:
         while True:
-            data = await websocket.receive_json()
+            message = await websocket.receive()
+            print(message)
 
-            if data.get("role") == "ARDUINO":
-                manager.promote_to_arduino(websocket)
-                continue
+            if message["type"] == "websocket.disconnect":
+                break
 
-            await manager.broadcast_json(data, websocket)
+            if "text" in message:
+                text = message["text"]
+                if text == "START":
+                    receiving_image = True
+                    image_chunks = []
+                    continue
+                elif text == "END":
+                    receiving_image = False
+                    full_image = b"".join(image_chunks)
 
-            if manager.arduino_client and manager.arduino_client != websocket:
-                await manager.send_to_arduino(data)
+                    await manager.broadcast_bytes(full_image, websocket)
+                    continue
+                elif text == "ARDUINO":
+                    manager.promote_to_arduino(websocket)
 
-    except WebSocketDisconnect:
+            if "bytes" in message and receiving_image:
+                image_chunks.append(message["bytes"])
+
+    finally:
         manager.disconnect(websocket)
