@@ -5,10 +5,10 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 
-const char* ssid = "YOUR_WIFI";
-const char* password = "YOUR_PASSWORD";
+const char* ssid = "PLDTHOMEFIBRadtqk";
+const char* password = "Pogs_12345678";
 
-const char* mqtt_server = "IP_HOSTING_MQTT_SERVER";
+const char* mqtt_server = "192.168.1.206";
 const int mqtt_port = 1883;
 
 WiFiClient wifi;
@@ -27,6 +27,7 @@ void connectMQTT() {
   while (!client.connected()) {
     if (client.connect("esp32cam")) {
       client.subscribe("esp32/capture");
+      Serial.println("Connected");
     } else {
       delay(2000);
     }
@@ -35,7 +36,10 @@ void connectMQTT() {
 
 void sendImageData(char* topic) {
   camera_fb_t * fb = esp_camera_fb_get();
-  if (!fb) return;
+  if (!fb) {
+    Serial.println("Camera not Available");
+    return;
+  }
   
   client.publish(topic, "START");
 
@@ -44,7 +48,7 @@ void sendImageData(char* topic) {
   for (size_t i = 0; i < fb->len; i += chunkSize) {
     size_t len = (i + chunkSize > fb->len) ? fb->len - i : chunkSize;
     client.publish(topic, fb->buf + i, len);
-    delay(10);
+    delay(20);
   }
 
   client.publish(topic, "END");
@@ -57,6 +61,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   for (unsigned int i = 0; i < length; i++) {
     cmd += (char)payload[i];
   }
+  Serial.println(cmd);
 
   if (cmd == "CAPTURE") {
     sendImageData("camera/capture");
@@ -99,9 +104,9 @@ void setup() {
 
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size = FRAMESIZE_HQVGA;
-  config.jpeg_quality = 15;
-  config.fb_count = psramFound() ? 2 : 1;
+  config.frame_size = FRAMESIZE_QQVGA;
+  config.jpeg_quality = 20;
+  config.fb_count = 1;
 
   esp_camera_init(&config);
 
@@ -118,7 +123,8 @@ void loop() {
     connectMQTT();
   }
   else if (stream) {
-    sendImageData("camera/stream")
+    sendImageData("camera/stream");
+    delay(100);
   }
 
   client.loop();
