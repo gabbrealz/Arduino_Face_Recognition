@@ -4,7 +4,11 @@ load_dotenv()
 
 CONTEXT_PATH = os.getenv("CONTEXT_PATH", "/marcusan-attendance")
 
+MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
+MQTT_PORT = os.getenv("MQTT_PORT", "1883")
+
 from fastapi import FastAPI, Request, Response, HTTPException, status
+from asyncio_mqtt import Client
 from contextlib import asynccontextmanager
 from time import time
 import asyncio
