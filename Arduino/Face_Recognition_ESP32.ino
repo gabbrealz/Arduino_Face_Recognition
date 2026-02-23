@@ -28,7 +28,6 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       break;
     case WStype_CONNECTED:
       Serial.println("WebSocket Connected");
-      ws.sendTXT("ARDUINO");
       break;
     case WStype_TEXT: {
       String cmd = String((char*)payload).substring(0, length);
@@ -56,13 +55,20 @@ void sendImageData() {
 
   ws.sendTXT("START");
 
-  const size_t chunkSize = 512;
+  const size_t chunkSize = 1024;
   for (size_t i = 0; i < fb->len; i += chunkSize) {
+
+    if (!ws.isConnected()) {
+      esp_camera_fb_return(fb);
+      return;
+    }
+
     size_t len = (i + chunkSize < fb->len) ? chunkSize : (fb->len - i);
+
     ws.sendBIN(fb->buf + i, len);
-    delay(1);
+
+    delay(2);
     ws.loop();
-    Serial.println("Sent");
   }
 
   ws.sendTXT("END");
@@ -98,9 +104,9 @@ void setup() {
 
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
+  config.jpeg_quality = 12;
+  config.fb_count = 2;
   config.frame_size = FRAMESIZE_QQVGA;
-  config.jpeg_quality = 20;
-  config.fb_count = 1;
 
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
@@ -111,6 +117,7 @@ void setup() {
   connectWiFi();
 
   ws.begin(ws_server, ws_port, "/ws");
+  ws.enableHeartbeat(15000, 3000, 2);
   ws.onEvent(webSocketEvent);
   ws.setReconnectInterval(5000);
 }
@@ -118,8 +125,28 @@ void setup() {
 void loop() {
   ws.loop();
 
+  if (Serial.available()) {
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
+
+    if (cmd == "CAPTURE") {
+      Serial.println("Capturing image...");
+      sendImageData();
+    }
+
+    if (cmd == "STREAM ON") {
+      stream = true;
+      Serial.println("Stream enabled");
+    }
+
+    if (cmd == "STREAM OFF") {
+      stream = false;
+      Serial.println("Stream disabled");
+    }
+  }
+
   if (stream) {
     sendImageData();
-    delay(100);
+    delay(700);
   }
 }
