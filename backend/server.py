@@ -25,11 +25,14 @@ from database.db import DB
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # app.state.mqtt_client = Client(MQTT_BROKER, MQTT_PORT)
-    # await app.state.mqtt_client.connect()
-    # asyncio.create_task(listen_to_topics())
+    app.state.mqtt_client = Client(MQTT_BROKER, MQTT_PORT)
+    await app.state.mqtt_client.connect()
+    task = asyncio.create_task(listen_to_topics())
 
     yield
+
+    task.cancel()
+    await app.state.mqtt_client.disconnect()
 
 app = FastAPI(lifespan=lifespan, root_path=CONTEXT_PATH)
 
@@ -53,12 +56,12 @@ app.include_router(attendance.router, prefix="/attendance")
 # =================================================================================================
 # MQTT CLIENT =====================================================================================
 
-# async def listen_to_topics():
-#     async with app.state.mqtt_client.unfiltered_messages() as messages:
-#         await app.state.mqtt_client.subscribe("camera/feed")
+async def listen_to_topics():
+    async with app.state.mqtt_client.unfiltered_messages() as messages:
+        await app.state.mqtt_client.subscribe("camera/feed")
 
-#         async for message in messages:
-#             print(f"Received: {message.payload.decode()}")
+        async for message in messages:
+            print(f"Received image")
 
 # =================================================================================================
 # RUN THE APP =====================================================================================
