@@ -6,12 +6,13 @@ class ConnectionManager:
         self.arduino_client: WebSocket = None
 
     def promote_to_arduino(self, websocket: WebSocket):
-        self.connections.remove(websocket)
+        if websocket in self.connections:
+            self.connections.remove(websocket)
         self.arduino_client = websocket
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.connections.append(websocket)
+    def connect(self, websocket: WebSocket):
+        if websocket not in self.connections:
+            self.connections.append(websocket)
 
     def disconnect(self, websocket: WebSocket):
         if self.arduino_client and websocket == self.arduino_client:
@@ -23,7 +24,6 @@ class ConnectionManager:
         dead_connections = []
 
         for connection in self.connections:
-            if connection == sender: continue
             try:
                 await connection.send_json(payload)
             except Exception:
@@ -36,7 +36,6 @@ class ConnectionManager:
         dead_connections = []
 
         for connection in self.connections:
-            if connection == sender: continue
             try:
                 await connection.send_bytes(payload)
             except Exception:
@@ -45,6 +44,9 @@ class ConnectionManager:
         for connection in dead_connections:
             self.disconnect(connection)
     
-    async def send_to_arduino(self, payload: dict):
-        if self.arduino_client != None:
-            await self.arduino_client.send_json(payload)
+    async def send_to_arduino(self, payload: str):
+        if self.arduino_client:
+            await self.arduino_client.send_text(payload)
+
+
+manager = ConnectionManager()

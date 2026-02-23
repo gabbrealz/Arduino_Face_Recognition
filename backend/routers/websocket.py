@@ -1,12 +1,12 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from services.connection_manager import ConnectionManager
+from services.connection_manager import manager
 
 router = APIRouter()
-manager = ConnectionManager()
 
 @router.websocket("")
 async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
+    await websocket.accept()
+    manager.connect(websocket)
 
     try:
         while True:
@@ -16,8 +16,10 @@ async def websocket_endpoint(websocket: WebSocket):
             if message["type"] == "websocket.disconnect":
                 break
 
-            if "text" in message:
-                text = message["text"]
+            text = message.get("text")
+            data = message.get("bytes")
+
+            if text is not None:
                 if text == "START":
                     receiving_image = True
                     image_chunks = []
@@ -31,8 +33,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 elif text == "ARDUINO":
                     manager.promote_to_arduino(websocket)
 
-            if "bytes" in message and receiving_image:
-                image_chunks.append(message["bytes"])
+                elif text == "CAPTURE":
+                    print("Sent to arduino")
+                    manager.send_to_arduino("CAPTURE")
+
+            elif data is not None and receiving_image:
+                image_chunks.append(data)
 
     finally:
         manager.disconnect(websocket)

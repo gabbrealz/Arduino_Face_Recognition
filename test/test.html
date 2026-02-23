@@ -34,7 +34,7 @@
 <img id="streamImage" />
 
 <script>
-    const ws = new WebSocket("ws://localhost:8000/ws");
+    const ws = new WebSocket("ws://192.168.1.168:8000/ws");
 
     let receiving = false;
     let imageChunks = [];
@@ -46,32 +46,14 @@
     };
 
     ws.onmessage = (event) => {
-
-        // TEXT MESSAGE (START / END)
-        if (typeof event.data === "string") {
-
-            if (event.data === "START") {
-                receiving = true;
-                imageChunks = [];
-                return;
-            }
-
-            if (event.data === "END") {
-                receiving = false;
-
-                const blob = new Blob(imageChunks, { type: "image/jpeg" });
-                const imageUrl = URL.createObjectURL(blob);
-
-                document.getElementById("streamImage").src = imageUrl;
-                return;
-            }
-
-            return;
-        }
-
-        // BINARY CHUNK
-        if (receiving) {
-            imageChunks.push(event.data);
+        console.log(event);
+        
+        if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {
+            const blob = event.data instanceof Blob ? event.data : new Blob([event.data], { type: "image/jpeg" });
+            const imageUrl = URL.createObjectURL(blob);
+            document.getElementById("streamImage").src = imageUrl;
+        } else {
+            console.log("Received text message:", event.data);
         }
     };
 
