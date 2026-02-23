@@ -29,27 +29,13 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     case WStype_CONNECTED:
       Serial.println("WebSocket Connected");
       break;
-    case WStype_TEXT: {
-      String cmd = String((char*)payload).substring(0, length);
-      Serial.println("Received: " + cmd);
-      if (cmd == "CAPTURE") {
-        sendImageData();
-      } else if (cmd == "STREAM ON") {
-        stream = true;
-      } else if (cmd == "STREAM OFF") {
-        stream = false;
-      }
-      break;
-    }
-    default:
-      break;
   }
 }
 
 void sendImageData() {
   camera_fb_t * fb = NULL;
-  fb = esb_camera_fb_get();
-  esp_camera_fb_return();
+  fb = esp_camera_fb_get();
+  esp_camera_fb_return(fb);
 
   fb = NULL;
   fb = esp_camera_fb_get();
@@ -91,16 +77,14 @@ void setup() {
   config.fb_count = 2;
   config.frame_size = FRAMESIZE_QVGA;
 
-  esp_err_t err = esp_camera_init(&config);
-  if (err != ESP_OK) {
-    Serial.printf("Camera init failed with error 0x%x", err);
+  if (esp_camera_init(&config) != ESP_OK) {
+    Serial.println("Camera init failed");
     return;
   }
 
   connectWiFi();
 
   ws.begin(ws_server, ws_port, "/ws");
-  ws.enableHeartbeat(15000, 3000, 2);
   ws.onEvent(webSocketEvent);
   ws.setReconnectInterval(5000);
 }
@@ -113,23 +97,7 @@ void loop() {
     cmd.trim();
 
     if (cmd == "CAPTURE") {
-      Serial.println("Capturing image...");
       sendImageData();
     }
-
-    if (cmd == "STREAM ON") {
-      stream = true;
-      Serial.println("Stream enabled");
-    }
-
-    if (cmd == "STREAM OFF") {
-      stream = false;
-      Serial.println("Stream disabled");
-    }
-  }
-
-  if (stream) {
-    sendImageData();
-    delay(700);
   }
 }
