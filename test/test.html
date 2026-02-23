@@ -29,6 +29,7 @@
 
 <button onclick="startStream()">Start Stream</button>
 <button onclick="stopStream()">Stop Stream</button>
+<button onclick="singleCapture()">Capture Once</button>
 
 <br>
 <img id="streamImage" />
@@ -79,6 +80,10 @@
 
     function stopStream() {
         client.publish("esp32/capture", "STREAM OFF");
+    }
+
+    function singleCapture() {
+        client.publish("esp32/capture", "CAPTURE");
     }
 </script>
 
