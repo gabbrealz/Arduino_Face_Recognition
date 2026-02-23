@@ -1,5 +1,6 @@
 import os
-import psycopg
+import asyncio
+from psycopg import OperationalError
 from psycopg_pool import ConnectionPool
 from psycopg.rows import dict_row
 
@@ -16,7 +17,7 @@ class DB:
     def log_attendance_for_face(embedding, threshold):
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT * FROM log_attendance_for_face(%s::vector, %s)", (embedding, threshold))
+                cur.execute("SELECT * FROM log_attendance_for_face(%s::vector, %s::real)", (embedding, threshold))
                 return cur.fetchone()
 
     @staticmethod
