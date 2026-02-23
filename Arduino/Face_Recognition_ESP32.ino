@@ -1,78 +1,70 @@
-#define MQTT_MAX_PACKET_SIZE 2048
-
 #include "esp_camera.h"
 #include "board_config.h"
 #include <WiFi.h>
-#include <PubSubClient.h>
+#include <WebsocketClient.h>
 
 const char* ssid = "PLDTHOMEFIBRadtqk";
 const char* password = "Pogs_12345678";
 
 const char* mqtt_server = "192.168.1.206";
-const int mqtt_port = 1883;
+const uint16_t ws_port = 8000;
 
-WiFiClient wifi;
-PubSubClient client(wifi);
-
-bool stream = false;
+WebsocketsClient ws;
+bool wsConnected = false;
 
 void connectWiFi() {
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
+    Serial.print(".");
   }
+  Serial.println("WiFi Connected");
 }
 
-void connectMQTT() {
-  while (!client.connected()) {
-    if (client.connect("esp32cam")) {
-      client.subscribe("esp32/capture");
-      Serial.println("Connected");
-    } else {
-      delay(2000);
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
+  switch(type) {
+    case WStype_DISCONNECTED:
+      Serial.println("WebSocket Disconnected");
+      break;
+    case WStype_CONNECTED:
+      Serial.println("WebSocket Connected");
+      break;
+    case WStype_TEXT: {
+      String cmd = String((char*)payload).substring(0, length);
+      Serial.println("Received: " + cmd);
+      if (cmd == "CAPTURE") {
+        sendImageData();
+      } else if (cmd == "STREAM ON") {
+        stream = true;
+      } else if (cmd == "STREAM OFF") {
+        stream = false;
+      }
+      break;
     }
+    default:
+      break;
   }
 }
 
 void sendImageData(char* topic) {
   camera_fb_t * fb = esp_camera_fb_get();
   if (!fb) {
-    Serial.println("Camera not Available");
+    Serial.println("Camera capture failed");
     return;
   }
-  
-  client.publish(topic, "START");
 
-  const size_t chunkSize = 1024;
+  ws.sendTXT("START");
 
+  const size_t chunkSize = 512;
   for (size_t i = 0; i < fb->len; i += chunkSize) {
-    size_t len = (i + chunkSize > fb->len) ? fb->len - i : chunkSize;
-    client.publish(topic, fb->buf + i, len);
-    delay(20);
+    size_t len = (i + chunkSize < fb->len) ? chunkSize : (fb->len - i);
+    ws.sendBIN(fb->buf + i, len);
+    delay(1);
+    ws.loop();
   }
 
-  client.publish(topic, "END");
+  ws.sendTXT("END");
   esp_camera_fb_return(fb);
-}
-
-void mqttCallback(char* topic, byte* payload, unsigned int length) {
-
-  String cmd;
-  for (unsigned int i = 0; i < length; i++) {
-    cmd += (char)payload[i];
-  }
-  Serial.println(cmd);
-
-  if (cmd == "CAPTURE") {
-    sendImageData("camera/capture");
-  }
-  else if (cmd == "STREAM ON") {
-    stream = true;
-  }
-  else if (cmd == "STREAM OFF") {
-    stream = false;
-  }
-
 }
 
 void setup() {
@@ -108,24 +100,23 @@ void setup() {
   config.jpeg_quality = 20;
   config.fb_count = 1;
 
-  esp_camera_init(&config);
+  esp_err_t err = esp_camera_init(&config);
+  if (err != ESP_OK) {
+    Serial.printf("Camera init failed with error 0x%x", err);
+    return;
+  }
 
   connectWiFi();
 
-  client.setServer(mqtt_server, mqtt_port);
-  client.setCallback(mqttCallback);
-
-  connectMQTT();
+  websocketClient.begin(mqtt_server, ws_port, "/");
+  websocketClient.onEvent(webSocketEvent);
 }
 
 void loop() {
-  if (!client.connected()) {
-    connectMQTT();
-  }
-  else if (stream) {
-    sendImageData("camera/stream");
+  webSocketClient.loop();
+
+  if (stream) {
+    sendImageData();
     delay(100);
   }
-
-  client.loop();
 }
