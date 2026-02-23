@@ -3,7 +3,6 @@ import asyncio
 from psycopg import OperationalError
 from psycopg_pool import ConnectionPool
 from psycopg.rows import dict_row
-from time import sleep
 
 DB_HOST = os.getenv("PGDB_HOST", "localhost")
 DB_NAME = os.getenv("POSTGRES_DB", "postgres")
@@ -18,7 +17,7 @@ class DB:
     def log_attendance_for_face(embedding, threshold):
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT * FROM log_attendance_for_face(%s::vector, %s)", (embedding, threshold))
+                cur.execute("SELECT * FROM log_attendance_for_face(%s::vector, %s::real)", (embedding, threshold))
                 return cur.fetchone()
 
     @staticmethod
