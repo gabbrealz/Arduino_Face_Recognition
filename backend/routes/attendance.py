@@ -1,9 +1,11 @@
 from fastapi import Request, APIRouter, status, HTTPException
 from psycopg import OperationalError, InterfaceError, DatabaseError
 
-from backend.database.db import DB
-from backend.server import logger
-from backend.services.image import Image, Face
+from time import time
+
+from database.db import DB
+from services.log import logger
+from services.image import Image, Face
 
 router = APIRouter()
 
@@ -38,7 +40,10 @@ async def log_student_attendance(request: Request):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image data is required")
 
     img = Image.get_decoded_img(img_bytes)
+
+    now = time()
     is_valid_img = await Face.image_is_valid(img)
+    logger.info(f"Image validation: {time()-now} secs")
 
     if not is_valid_img:
         logger.info("Log student attendance [IMAGE IS INVALID]")
@@ -47,7 +52,9 @@ async def log_student_attendance(request: Request):
             detail="Image is invalid. Please try again"
         )
     
+    now = time()
     embedding = await Image.get_embedding(img)
+    logger.info(f"Image to embedding: {time()-now} secs")
 
     try:
         student_record = DB.log_attendance_for_face(embedding, 0.4)

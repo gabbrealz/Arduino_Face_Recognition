@@ -17,12 +17,16 @@ class Image:
 class Face:
     @staticmethod
     async def image_is_valid(img):
-        faces = await asyncio.to_thread(
-            DeepFace.extract_faces,
-            img_path=img,
-            detector_backend="retinaface",
-            enforce_detection=False,
-            anti_spoofing=True)
+        try:
+            faces = await asyncio.to_thread(
+                DeepFace.extract_faces,
+                img_path=img,
+                detector_backend="opencv",
+                enforce_detection=True,
+                anti_spoofing=True
+            )
+            print(faces)
+            return any(face.get("is_real", False) for face in faces)
 
-        if len(faces) > 0: return True
-        return False
+        except ValueError:
+            return False

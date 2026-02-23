@@ -1,11 +1,13 @@
-from fastapi import APIRouter, status, HTTPException
+from fastapi import Request, APIRouter, status, HTTPException
 from psycopg import OperationalError, InterfaceError, DatabaseError
 from psycopg.errors import UniqueViolation
 
-from backend.database.db import DB
-from backend.server import logger
-from backend.services.image import Image, Face
-from backend.models.request import CreateStudentRequestBody
+from time import time
+
+from database.db import DB
+from services.log import logger
+from services.image import Image, Face
+from models.request import CreateStudentRequestBody
 
 router = APIRouter()
 
@@ -39,7 +41,10 @@ async def register_face(student_number: str, request: Request):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image data is required")
 
     img = Image.get_decoded_img(img_bytes)
+
+    now = time()
     is_valid_img = await Face.image_is_valid(img)
+    logger.info(f"Image validation: {time()-now} secs")
 
     if not is_valid_img:
         logger.info("Log student attendance [NO IMAGE DATA]")
@@ -48,9 +53,12 @@ async def register_face(student_number: str, request: Request):
             detail="Image is invalid. Please try again"
         )
     
+    now = time()
     embedding = await Image.get_embedding(img)
+    logger.info(f"Image to embedding: {time()-now} secs")
 
     try:
+        now = time()
         face_registered = DB.register_face(student_number, embedding)
     except (OperationalError, InterfaceError):
         logger.exception(f"Register face for: {student_number} [DATABASE CONNECTION ERROR]")
@@ -64,6 +72,8 @@ async def register_face(student_number: str, request: Request):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error"
         )
+
+    logger.info(f"Save to DB: {time()-now} secs")
 
     if not face_registered:
         logger.info(f"Register face for: {student_number} [NO IMAGE DATA]")

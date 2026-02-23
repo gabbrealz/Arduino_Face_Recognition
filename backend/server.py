@@ -7,7 +7,7 @@ CONTEXT_PATH = os.getenv("CONTEXT_PATH", "/marcusan-attendance")
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = os.getenv("MQTT_PORT", "1883")
 
-from fastapi import FastAPI, Request, Response, HTTPException, status
+from fastapi import FastAPI, Request
 from asyncio_mqtt import Client
 from contextlib import asynccontextmanager
 from time import time
@@ -16,17 +16,19 @@ import uvicorn
 import logging
 import argparse
 
+from services.log import logger
 from routes import students, attendance
 from database.db import DB
 
 # =================================================================================================
 # APP CONTEXT =====================================================================================
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # app.state.mqtt_client = Client(MQTT_BROKER, MQTT_PORT)
+    # await app.state.mqtt_client.connect()
+    # asyncio.create_task(listen_to_topics())
+
     yield
 
 app = FastAPI(lifespan=lifespan, root_path=CONTEXT_PATH)
@@ -47,6 +49,16 @@ async def log_requests(request: Request, call_next):
 
 app.include_router(students.router, prefix="/students")
 app.include_router(attendance.router, prefix="/attendance")
+
+# =================================================================================================
+# MQTT CLIENT =====================================================================================
+
+# async def listen_to_topics():
+#     async with app.state.mqtt_client.unfiltered_messages() as messages:
+#         await app.state.mqtt_client.subscribe("camera/feed")
+
+#         async for message in messages:
+#             print(f"Received: {message.payload.decode()}")
 
 # =================================================================================================
 # RUN THE APP =====================================================================================
