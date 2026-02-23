@@ -47,31 +47,14 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
 }
 
 void sendImageData() {
-  camera_fb_t * fb = esp_camera_fb_get();
-  if (!fb) {
-    Serial.println("Camera capture failed");
-    return;
-  }
+  camera_fb_t * fb = NULL;
+  fb = esb_camera_fb_get();
+  esp_camera_fb_return();
 
-  ws.sendTXT("START");
+  fb = NULL;
+  fb = esp_camera_fb_get();
 
-  const size_t chunkSize = 1024;
-  for (size_t i = 0; i < fb->len; i += chunkSize) {
-
-    if (!ws.isConnected()) {
-      esp_camera_fb_return(fb);
-      return;
-    }
-
-    size_t len = (i + chunkSize < fb->len) ? chunkSize : (fb->len - i);
-
-    ws.sendBIN(fb->buf + i, len);
-
-    delay(2);
-    ws.loop();
-  }
-
-  ws.sendTXT("END");
+  ws.sendBIN(fb->buf, fb->len);
   esp_camera_fb_return(fb);
 }
 
@@ -104,9 +87,9 @@ void setup() {
 
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.jpeg_quality = 12;
+  config.jpeg_quality = 10;
   config.fb_count = 2;
-  config.frame_size = FRAMESIZE_QQVGA;
+  config.frame_size = FRAMESIZE_QVGA;
 
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
