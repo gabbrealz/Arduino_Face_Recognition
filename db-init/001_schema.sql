@@ -1,9 +1,21 @@
 CREATE EXTENSION vector;
 
 
+CREATE SEQUENCE student_number_seq START 1;
+
+CREATE OR REPLACE FUNCTION generate_student_number() RETURNS text AS $$
+DECLARE seq_num INT;
+BEGIN
+    seq_num := nextval('student_number_seq');
+    RETURN to_char(EXTRACT(YEAR FROM CURRENT_DATE), 'FM0000') || '-' ||
+           to_char((seq_num / 1000)::int, 'FM000') || '-' ||
+           to_char((seq_num % 1000)::int, 'FM000');
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TABLE public.students (
     id BIGSERIAL,
-    student_number CHAR(12) NOT NULL,
+    student_number CHAR(12) NOT NULL DEFAULT generate_student_number(),
     full_name TEXT NOT NULL,
     student_email TEXT NOT NULL,
 

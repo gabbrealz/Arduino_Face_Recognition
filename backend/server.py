@@ -1,7 +1,5 @@
 import os
 from dotenv import load_dotenv
-
-from backend.routers import modes
 load_dotenv()
 
 CONTEXT_PATH = os.getenv("CONTEXT_PATH", "/marcusan-attendance")
