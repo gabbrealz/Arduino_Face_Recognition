@@ -17,8 +17,38 @@ export default function AdminHomepage() {
     socket.onerror = (error) => console.error("WebSocket Error:", error);
     return () => socket.close();
   }, []);
+  
+  // New state variables for database connection
+  const [students, setStudents] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const closePopup = () => setActivePopup(null);
+
+  // Fetch data only when the "users" popup is opened
+  useEffect(() => {
+    if (activePopup === 'users') {
+      fetchStudents();
+    }
+  }, [activePopup]);
+
+  const fetchStudents = async () => {
+    setIsLoading(true);
+    try {
+      // ⚠️ Replace '/api/students' with your actual backend URL/endpoint
+      const response = await fetch('/api/students');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setStudents(data); // Save database rows to React state
+    } catch (error) {
+      console.error("Error fetching student list:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="admin_homepage">
@@ -64,11 +94,30 @@ export default function AdminHomepage() {
                 <table className="popup_table">
                   {activePopup === 'users' ? (
                     <>
-                      <thead><tr><th>Action</th><th>Timestamp</th></tr></thead>
+                      <thead>
+                        <tr>
+                          <th>Student Number</th>
+                          <th>Name</th>
+                          {/* Removed Section to match your DB schema */}
+                          <th>Student Email</th>
+                        </tr>
+                      </thead>
                       <tbody>
-                        <tr><td>Login Success</td><td>10:45 AM</td></tr>
-                        <tr><td>DB Backup</td><td>09:00 AM</td></tr>
-                      </tbody> 
+                        {isLoading ? (
+                          <tr><td colSpan="3" style={{ textAlign: 'center' }}>Loading students...</td></tr>
+                        ) : students.length > 0 ? (
+                          // Dynamically map over the data fetched from PostgreSQL
+                          students.map((student) => (
+                            <tr key={student.id}>
+                              <td>{student.student_number}</td>
+                              <td>{student.full_name}</td>
+                              <td>{student.student_email}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr><td colSpan="3" style={{ textAlign: 'center' }}>No students found.</td></tr>
+                        )}
+                      </tbody>
                     </>
                   ) : (
                     <>
