@@ -44,7 +44,8 @@ uint8_t * _jpg_buf = NULL;
 uint8_t state = 0;
 
 using namespace websockets;
-WebsocketsClient client;
+WebsocketsClient streamClient;
+WebsocketsClient eventClient;
 
 void onMessageCallback(WebsocketsMessage message) {
   // Serial.print("Got Message: ");
@@ -114,8 +115,23 @@ esp_err_t init_wifi() {
   // Serial.println("WiFi OK");
   // Serial.println("connecting to WS: ");
 
-  client.onMessage(onMessageCallback);
-  bool connected = client.connect(server_host, server_port, "/ws");
+  streamClient.onMessage(onMessageCallback);
+  eventClient.onMessage(onMessageCallback);
+
+  bool connected = streamClient.connect(server_host, server_port, "/ws");
+
+  if (!connected) {
+    // Serial.println("WS connect failed!");
+    // Serial.println(WiFi.localIP());
+    state = 3;
+    return ESP_FAIL;
+  }
+
+  if (state == 3) {
+    return ESP_FAIL;
+  }
+
+  connected = eventClient.connect(server_host, server_port, "/ws/event");
 
   if (!connected) {
     // Serial.println("WS connect failed!");
@@ -129,7 +145,7 @@ esp_err_t init_wifi() {
   }
 
   // Serial.println("WS OK");
-  client.send("hello from ESP32 camera stream!");
+  streamClient.send("hello from ESP32 camera stream!");
   return ESP_OK;
 };
 
@@ -155,10 +171,13 @@ void sendImageToApi(String endpoint) {
     int httpResponseCode = http.POST(fb->buf, fb->len);
 
     if (httpResponseCode > 0) {
-      Serial.println(http.getString());
+      String response = http.getString();
+      eventClient.sendTXT(response);
+      Serial.println(response);
     }
 
     http.end();
+    stream = true;
   }
 
   esp_camera_fb_return(fb);
@@ -173,7 +192,7 @@ void sendImageToSocket() {
     ESP.restart();
   }
 
-  client.sendBinary((const char*) fb->buf, fb->len);
+  streamClient.sendBinary((const char*) fb->buf, fb->len);
   // Serial.println("image sent");
   esp_camera_fb_return(fb);
 }
@@ -191,7 +210,7 @@ void setup() {
 }
 
 void loop() {
-  client.poll();
+  streamClient.poll();
 
   if (Serial.available() > 0) {
     String message = Serial.readString();
@@ -201,7 +220,7 @@ void loop() {
     else sendImageToApi(message);
   }
 
-  if (stream && client.available()) {
+  if (stream && streamClient.available()) {
     sendImageToSocket();
   }
 }

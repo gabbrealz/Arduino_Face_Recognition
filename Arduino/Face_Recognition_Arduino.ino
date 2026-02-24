@@ -103,40 +103,46 @@ void loop() {
         lcd.print("Ready");
         return;
       }
-
-      if (response != "UNKNOWN") {
-
-        digitalWrite(GREEN_LED, HIGH);
-
-        lcd.clear();
-        lcd.setCursor(0,0);
-        lcd.print("Welcome");
-
-        lcd.setCursor(0,1);
-        lcd.print(response);
-
-        successTone();
-
-        delay(3000);
-
-        digitalWrite(GREEN_LED, LOW);
-      }
       else {
+        StaticJsonDocument<2048> doc;
+        DeserializationError error = deserializeJson(doc, response);
 
-        digitalWrite(RED_LED, HIGH);
-
-        lcd.clear();
-        lcd.setCursor(0,0);
-        lcd.print("Access Denied");
-
-        lcd.setCursor(0,1);
-        lcd.print("Not Registered");
-
-        errorTone();
-
-        delay(3000);
-
-        digitalWrite(RED_LED, LOW);
+        if (!error) {
+          if (!doc.containsKey("detail")) {
+    
+            digitalWrite(GREEN_LED, HIGH);
+    
+            lcd.clear();
+            lcd.setCursor(0,0);
+            lcd.print("Welcome");
+    
+            lcd.setCursor(0,1);
+            lcd.print(doc["student"]["student_number"]);
+    
+            successTone();
+    
+            delay(3000);
+    
+            digitalWrite(GREEN_LED, LOW);
+          }
+          else {
+    
+            digitalWrite(RED_LED, HIGH);
+    
+            lcd.clear();
+            lcd.setCursor(0,0);
+            lcd.print("Access Denied");
+    
+            lcd.setCursor(0,1);
+            lcd.print(doc["detail"]);
+    
+            errorTone();
+    
+            delay(3000);
+    
+            digitalWrite(RED_LED, LOW);
+          }
+        }
       }
 
       lcd.clear();
