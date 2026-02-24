@@ -21,7 +21,6 @@ export default function AdminHomepage() {
   const fetchStudents = async () => {
     setIsLoading(true);
     try {
-      // ⚠️ Replace '/api/students' with your actual backend URL/endpoint
       const response = await fetch('/api/students');
       
       if (!response.ok) {
