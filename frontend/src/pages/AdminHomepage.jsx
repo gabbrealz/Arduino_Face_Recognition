@@ -6,7 +6,7 @@ import { MdClose } from 'react-icons/md';
 export default function AdminHomepage() {
   const [activePopup, setActivePopup] = useState(null);
   const [logs, setLogs] = useState([]);
-const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -18,7 +18,7 @@ const [students, setStudents] = useState([]);
     socket.onerror = (error) => console.error("WebSocket Error:", error);
     return () => socket.close();
   }, []);
-  
+
   useEffect(() => {
     if (activePopup === 'users') {
       fetchStudents();
