@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-// 1. Import from react-icons (using Font Awesome and Md sets)
 import { FaUsers, FaClipboardList, FaUserPlus } from 'react-icons/fa';
 import { MdClose } from 'react-icons/md';
 
