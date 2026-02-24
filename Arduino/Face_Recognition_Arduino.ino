@@ -1,3 +1,4 @@
+#include <LiquidCrystal_I2C.h>
 #include <WiFiS3.h>
 #include <ArduinoHttpClient.h>
 #include <ArduinoJson.h>
@@ -108,39 +109,32 @@ void loop() {
         DeserializationError error = deserializeJson(doc, response);
 
         if (!error) {
-          if (!doc.containsKey("detail")) {
-    
-            digitalWrite(GREEN_LED, HIGH);
-    
-            lcd.clear();
-            lcd.setCursor(0,0);
-            lcd.print("Welcome");
-    
-            lcd.setCursor(0,1);
-            lcd.print(doc["student"]["student_number"]);
-    
-            successTone();
-    
-            delay(3000);
-    
-            digitalWrite(GREEN_LED, LOW);
+          if (!doc.containsKey("detail") && doc.containsKey("student")) {
+              JsonObject student = doc["student"].as<JsonObject>();
+              const char* studentNumber = student["student_number"];
+              
+              digitalWrite(GREEN_LED, HIGH);
+
+              lcd.clear();
+              lcd.setCursor(0,0);
+              lcd.print("Welcome");
+
+              lcd.setCursor(0,1);
+              lcd.print(studentNumber);
           }
           else {
-    
-            digitalWrite(RED_LED, HIGH);
-    
-            lcd.clear();
-            lcd.setCursor(0,0);
-            lcd.print("Access Denied");
-    
-            lcd.setCursor(0,1);
-            lcd.print(doc["detail"]);
-    
-            errorTone();
-    
-            delay(3000);
-    
-            digitalWrite(RED_LED, LOW);
+              digitalWrite(RED_LED, HIGH);
+              lcd.clear();
+              lcd.setCursor(0,0);
+              lcd.print("Access Denied");
+              
+              const char* detailMsg = doc.containsKey("detail") ? doc["detail"] : "Unknown Error";
+              lcd.setCursor(0,1);
+              lcd.print(detailMsg);
+
+              errorTone();
+              delay(3000);
+              digitalWrite(RED_LED, LOW);
           }
         }
       }

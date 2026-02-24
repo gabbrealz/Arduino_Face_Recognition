@@ -172,7 +172,7 @@ void sendImageToApi(String endpoint) {
 
     if (httpResponseCode > 0) {
       String response = http.getString();
-      eventClient.sendTXT(response);
+      eventClient.send(response);
       Serial.println(response);
     }
 
