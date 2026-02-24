@@ -2,13 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import CameraApp from "./components/CameraApp";
 import PopupOverlay from "./components/PopupOverlay";
-<<<<<<< HEAD
 import AdminHomepage from "./pages/AdminHomepage";
 import './App.css';
-=======
-import "./App.css";
-
->>>>>>> aa4aa069b93d634ea13c3cfc5f85f8332d300e6c
 export default function App() {
   const [capturedImage, setCapturedImage] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
@@ -83,20 +78,8 @@ export default function App() {
           )}
 
           <Routes>
-<<<<<<< HEAD
             <Route path="/" element={<CameraApp onCapture={handleCapture} />} />
             <Route path="/admin" element={<AdminHomepage />} />
-=======
-            <Route
-              path="/"
-              element={
-                <CameraApp
-                  streamImage={streamImage}
-                  onCapture={handleCapture}
-                />
-              }
-            />
->>>>>>> aa4aa069b93d634ea13c3cfc5f85f8332d300e6c
           </Routes>
         </main>
 
