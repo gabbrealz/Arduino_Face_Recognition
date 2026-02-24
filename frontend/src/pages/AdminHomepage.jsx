@@ -1,9 +1,22 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, ScrollText, UserPlus, X } from 'lucide-react';
+// 1. Import from react-icons (using Font Awesome and Md sets)
+import { FaUsers, FaClipboardList, FaUserPlus } from 'react-icons/fa';
+import { MdClose } from 'react-icons/md';
 
 export default function AdminHomepage() {
   const [activePopup, setActivePopup] = useState(null);
+  const [logs, setLogs] = useState([]);
+
+  useEffect(() => {
+    const socket = new WebSocket('ws://localhost:8080/attendance');
+    socket.onmessage = (event) => {
+      const newData = JSON.parse(event.data);
+      setLogs((prevLogs) => [newData, ...prevLogs]);
+    };
+    socket.onerror = (error) => console.error("WebSocket Error:", error);
+    return () => socket.close();
+  }, []);
   
   // New state variables for database connection
   const [students, setStudents] = useState([]);
@@ -41,26 +54,25 @@ export default function AdminHomepage() {
       <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }}>Management</motion.h1>
 
       <div className="admin_container">
-        {/* Users Card - Opens Popup */}
+        {/* Updated Icon: FaUsers */}
         <motion.button className="users" onClick={() => setActivePopup('users')} whileHover={{ y: -5 }}>
-          <Users size={24} />
+          <FaUsers size={24} />
           <span className="title">Students</span>
         </motion.button>
 
-        {/* Logs Card - Opens Popup */}
+        {/* Updated Icon: FaClipboardList */}
         <motion.button className="logs" onClick={() => setActivePopup('logs')} whileHover={{ y: -5 }}>
-          <ScrollText size={24} />
+          <FaClipboardList size={24} />
           <span className="title"> Attendance Logs</span>
         </motion.button>
 
-        {/* Register Card - Static */}
+        {/* Updated Icon: FaUserPlus */}
         <button className="register">
-          <UserPlus size={24} />
+          <FaUserPlus size={24} />
           <span className="title">Register Students</span>
         </button>
       </div>
 
-      {/* Popup Overlay */}
       <AnimatePresence>
         {activePopup && (
           <div className="popup_overlay" onClick={closePopup}>
@@ -72,8 +84,9 @@ export default function AdminHomepage() {
               onClick={(e) => e.stopPropagation()} 
             >
               <div className="popup_header">
-                <h2>{activePopup === 'users' ? 'Student List' : 'System Logs'}</h2>
-                <button onClick={closePopup} className="close_btn"><X size={20} /></button>
+                <h2>{activePopup === 'users' ? 'User Directory' : 'Attendance Logs'}</h2>
+                {/* Updated Icon: MdClose */}
+                <button onClick={closePopup} className="close_btn"><MdClose size={24} /></button>
               </div>
 
               <div className="table_container">
@@ -107,10 +120,32 @@ export default function AdminHomepage() {
                     </>
                   ) : (
                     <>
-                      <thead><tr><th>Name</th><th>StudentID</th><th>Attendance Time</th></tr></thead>
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Student Number</th>
+                          <th>Attendance Time</th>
+                          <th>Date</th>
+                        </tr>
+                      </thead>
                       <tbody>
-                        <tr><td>Alex Rivera</td><td>2024-00000</td><td>12:34 PM</td></tr>
-                        <tr><td>Sarah Chen</td><td>2024-00000</td><td>12:34 PM</td></tr>
+                        {logs.length > 0 ? (
+                          logs.map((log, index) => (
+                            <motion.tr 
+                              key={index}
+                              initial={{ backgroundColor: "#e6f7ff" }}
+                              animate={{ backgroundColor: "transparent" }}
+                              transition={{ duration: 2 }}
+                            >
+                              <td>{log.name}</td>
+                              <td>{log.studentNumber}</td>
+                              <td>{log.time}</td>
+                              <td>{log.date}</td>
+                            </motion.tr>
+                          ))
+                        ) : (
+                          <tr><td colSpan="4" style={{textAlign: 'center'}}>Waiting for logs...</td></tr>
+                        )}
                       </tbody>
                     </>
                   )}

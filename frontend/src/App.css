@@ -292,30 +292,28 @@
 }
 
 .users {
-  grid-column: span 5; 
-  color: #3498db;
+  grid-column: span 6; 
+  color: #db9034;
   align-items: center;
   justify-content: center;
 }
 
 .logs {
-  grid-column: span 7; 
-  color: #3498db;
+  grid-column: span 6; 
+  color: #700505;
   align-items: center;
   justify-content: center;
 }
 
 .register {
   grid-column: span 12;
-  /* This was likely the overlap culprit. Reduced span or use auto. */
   grid-row: span 1; 
-  min-height: 250px; /* Give it enough presence without hogging 40vh */
+  min-height: 250px;
   color: #22c55e;
   align-items: center;
   justify-content: center;
 }
 
-/* Responsive fix: Stack cards on small screens so they don't squish and overlap */
 @media (max-width: 900px) {
   .admin_container {
     grid-template-columns: 1fr;
@@ -341,7 +339,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px); /* Minimalist blur */
+  backdrop-filter: blur(8px); 
   display: flex;
   justify-content: center;
   align-items: center;
@@ -385,29 +383,36 @@
   color: #111;
 }
 
-/* Minimalist Popup Table */
 .table_container {
+  width: 100%;
   max-height: 400px;
   overflow-y: auto;
 }
 
+.popup_header h2{
+  text-align: center;
+}
 .popup_table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: auto;
 }
 
 .popup_table th {
-  text-align: left;
+  text-align: center;
   padding: 12px 8px;
   font-size: 12px;
   text-transform: uppercase;
   color: #aaa;
   border-bottom: 1px solid #eee;
+  gap: 90px;
 }
 
 .popup_table td {
+  text-align: center;
   padding: 16px 8px;
   border-bottom: 1px solid #f9f9f9;
   font-size: 14px;
   color: #333;
+  gap: 90px;
 }

@@ -30,7 +30,7 @@ export default function App() {
 
         const imageUrl = URL.createObjectURL(blob);
         setStreamImage((prev) => {
-          if (prev) URL.revokeObjectURL(prev); // cleanup old blob
+          if (prev) URL.revokeObjectURL(prev); 
           return imageUrl;
         });
       } else {
