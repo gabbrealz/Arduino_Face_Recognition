@@ -37,7 +37,7 @@ async def log_student_attendance(request: Request):
 
     if not img_bytes:
         logger.info("Log student attendance [NO IMAGE DATA]")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image data is required")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No image data")
 
     img = Image.get_decoded_img(img_bytes)
 
@@ -49,7 +49,7 @@ async def log_student_attendance(request: Request):
         logger.info("Log student attendance [IMAGE IS INVALID]")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Image is invalid. Please try again"
+            detail="Invalid image"
         )
     
     now = time()
@@ -62,23 +62,23 @@ async def log_student_attendance(request: Request):
         logger.exception("Log student attendance [DATABASE CONNECTION ERROR]")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database unavailable. Please try again later."
+            detail="Database error"
         )
     except DatabaseError:
         logger.exception("Log student attendance [DATABASE ERROR]")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error"
+            detail="Database error"
         )
 
     if not student_record:
         logger.info("Log student attendance [NO STUDENT MATCHES THE IMAGE]")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="The image does not match any registered student"
+            detail="Not a student"
         )
 
     return {
-        "message": f"Attendance logged successfully for {student_record['student_number']}",
+        "message": f"Logged for: {student_record['student_number']}",
         "student": student_record
     }

@@ -18,7 +18,7 @@ import logging
 import argparse
 
 from services.log import logger
-from routers import students, attendance, websocket
+from routers import students, attendance, websocket, modes
 from database.db import DB
 
 # =================================================================================================
@@ -39,6 +39,8 @@ def on_disconnect(client, packet, exc=None):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.mode = "ATTENDANCE"
+
     try:
         client = MQTTClient("fastapi-client")
         client.on_connect = on_connect
@@ -81,6 +83,7 @@ async def log_requests(request: Request, call_next):
 app.include_router(students.router, prefix="/students")
 app.include_router(attendance.router, prefix="/attendance")
 app.include_router(websocket.router, prefix="/ws")
+app.include_router(modes.router, prefix="/modes")
 
 # =================================================================================================
 # RUN THE APP =====================================================================================

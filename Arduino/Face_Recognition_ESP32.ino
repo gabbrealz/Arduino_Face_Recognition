@@ -1,6 +1,9 @@
 #include "esp_camera.h"
 #include <WiFi.h>
+#include <HTTPClient.h>
 #include <ArduinoWebsockets.h>
+#include <ArduinoJson.h>
+
 #include "esp_timer.h"
 #include "img_converters.h"
 #include "fb_gfx.h"
@@ -26,11 +29,14 @@
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
+// =========================================================================
+// CONNECTION INFO =========================================================
+
 const char* ssid     = "PLDTHOMEFIBRM764a";
 const char* password = "AgotPerez@25";
 
-const char* websockets_server_host = "192.168.1.168";
-const uint16_t websockets_server_port = 8000;
+const char* server_host = "192.168.1.168";
+const uint16_t server_port = 8000;
 
 camera_fb_t * fb = NULL;
 size_t _jpg_buf_len = 0;
@@ -38,12 +44,21 @@ uint8_t * _jpg_buf = NULL;
 uint8_t state = 0;
 
 using namespace websockets;
-WebsocketsClient client;
+WebsocketsClient streamClient;
+WebsocketsClient eventClient;
 
 void onMessageCallback(WebsocketsMessage message) {
-  Serial.print("Got Message: ");
-  Serial.println(message.data());
+  // Serial.print("Got Message: ");
+  // Serial.println(message.data());
 }
+
+// =========================================================================
+// LOGIC VARIABLES =========================================================
+
+bool stream = false;
+
+// =========================================================================
+// INITIALIZATION FUNCTIONS ================================================
 
 esp_err_t init_camera() {
   camera_config_t config;
@@ -76,36 +91,38 @@ esp_err_t init_camera() {
   esp_err_t err = esp_camera_init(&config);
 
   if (err != ESP_OK) {
-    Serial.printf("camera init FAIL: 0x%x", err);
+    // Serial.printf("camera init FAIL: 0x%x", err);
     return err;
   }
 
   sensor_t * s = esp_camera_sensor_get();
   s->set_framesize(s, FRAMESIZE_QVGA);
-  Serial.println("camera init OK");
+  // Serial.println("camera init OK");
   return ESP_OK;
 };
 
 
 esp_err_t init_wifi() {
   WiFi.begin(ssid, password);
-  Serial.println("Wifi init ");
+  // Serial.println("Wifi init ");
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    // Serial.print(".");
   }
 
-  Serial.println("");
-  Serial.println("WiFi OK");
-  Serial.println("connecting to WS: ");
+  // Serial.println("");
+  // Serial.println("WiFi OK");
+  // Serial.println("connecting to WS: ");
 
-  client.onMessage(onMessageCallback);
-  bool connected = client.connect(websockets_server_host, websockets_server_port, "/ws");
+  streamClient.onMessage(onMessageCallback);
+  eventClient.onMessage(onMessageCallback);
+
+  bool connected = streamClient.connect(server_host, server_port, "/ws");
 
   if (!connected) {
-    Serial.println("WS connect failed!");
-    Serial.println(WiFi.localIP());
+    // Serial.println("WS connect failed!");
+    // Serial.println(WiFi.localIP());
     state = 3;
     return ESP_FAIL;
   }
@@ -114,36 +131,96 @@ esp_err_t init_wifi() {
     return ESP_FAIL;
   }
 
-  Serial.println("WS OK");
-  client.send("hello from ESP32 camera stream!");
+  connected = eventClient.connect(server_host, server_port, "/ws/event");
+
+  if (!connected) {
+    // Serial.println("WS connect failed!");
+    // Serial.println(WiFi.localIP());
+    state = 3;
+    return ESP_FAIL;
+  }
+
+  if (state == 3) {
+    return ESP_FAIL;
+  }
+
+  // Serial.println("WS OK");
+  streamClient.send("hello from ESP32 camera stream!");
   return ESP_OK;
 };
 
+// =========================================================================
+// HELPER FUNCTIONS ========================================================
+
+void sendImageToApi(String endpoint) {
+  camera_fb_t *fb = esp_camera_fb_get();
+
+  if (!fb) {
+    // Serial.println("img capture failed");
+    esp_camera_fb_return(fb);
+    return;
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    String serverUrl = "http://" + String(server_host) + ":" + String(server_port) + endpoint;
+
+    http.begin(serverUrl);
+    http.addHeader("Content-Type", "image/jpeg");
+
+    int httpResponseCode = http.POST(fb->buf, fb->len);
+
+    if (httpResponseCode > 0) {
+      String response = http.getString();
+      eventClient.send(response);
+      Serial.println(response);
+    }
+
+    http.end();
+    stream = true;
+  }
+
+  esp_camera_fb_return(fb);
+}
+
+void sendImageToSocket() {
+  camera_fb_t *fb = esp_camera_fb_get();
+
+  if (!fb) {
+    // Serial.println("img capture failed");
+    esp_camera_fb_return(fb);
+    ESP.restart();
+  }
+
+  streamClient.sendBinary((const char*) fb->buf, fb->len);
+  // Serial.println("image sent");
+  esp_camera_fb_return(fb);
+}
+
+// =========================================================================
+// SETUP AND LOOP ==========================================================
 
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
 
   Serial.begin(115200);
-  Serial.setDebugOutput(true);
 
   init_camera();
   init_wifi();
 }
 
 void loop() {
-  client.poll();
+  streamClient.poll();
 
-  if (client.available()) {
-    camera_fb_t *fb = esp_camera_fb_get();
+  if (Serial.available() > 0) {
+    String message = Serial.readString();
 
-    if (!fb) {
-      Serial.println("img capture failed");
-      esp_camera_fb_return(fb);
-      ESP.restart();
-    }
+    if (message == "STREAM") stream = true;
+    if (message == "!STREAM") stream = false;
+    else sendImageToApi(message);
+  }
 
-    client.sendBinary((const char*) fb->buf, fb->len);
-    Serial.println("image sent");
-    esp_camera_fb_return(fb);
+  if (stream && streamClient.available()) {
+    sendImageToSocket();
   }
 }

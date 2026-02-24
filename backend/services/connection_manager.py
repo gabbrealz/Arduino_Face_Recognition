@@ -52,4 +52,5 @@ class ConnectionManager:
             self.disconnect(connection)
             
 
-manager = ConnectionManager()
+stream_manager = ConnectionManager()
+event_manager = ConnectionManager()

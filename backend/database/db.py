@@ -45,12 +45,12 @@ class DB:
                 return cur.fetchone()
 
     @staticmethod
-    def insert_student(student_number, full_name, student_email):
+    def insert_student(full_name, student_email):
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO public.students (student_number, full_name, student_email) VALUES (%s, %s, %s)",
-                    (student_number, full_name, student_email))
+                    "INSERT INTO public.students (full_name, student_email) VALUES (%s, %s)",
+                    (full_name, student_email))
             conn.commit()
     
 
