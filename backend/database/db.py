@@ -49,7 +49,7 @@ class DB:
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO public.students (full_name, student_email) VALUES (%s, %s, %s)",
+                    "INSERT INTO public.students (full_name, student_email) VALUES (%s, %s)",
                     (full_name, student_email))
             conn.commit()
     
