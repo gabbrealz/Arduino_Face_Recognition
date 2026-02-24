@@ -17,7 +17,8 @@ class ConnectionManager:
 
         for connection in self.connections:
             try:
-                await connection.send_text(payload)
+                if connection != sender:
+                    await connection.send_text(payload)
             except Exception:
                 dead_connections.append(connection)
 
@@ -29,7 +30,8 @@ class ConnectionManager:
 
         for connection in self.connections:
             try:
-                await connection.send_json(payload)
+                if connection != sender:
+                    await connection.send_json(payload)
             except Exception:
                 dead_connections.append(connection)
 
@@ -41,7 +43,8 @@ class ConnectionManager:
 
         for connection in self.connections:
             try:
-                await connection.send_bytes(payload)
+                if connection != sender:
+                    await connection.send_bytes(payload)
             except Exception:
                 dead_connections.append(connection)
 

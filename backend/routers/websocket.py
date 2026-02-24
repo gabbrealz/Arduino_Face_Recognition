@@ -11,14 +11,20 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             message = await websocket.receive()
-            print(message)
 
             if message["type"] == "websocket.disconnect":
+                print("Received disconnect message")
                 break
+
+            text = message.get("text")
+            if text is not None:
+                print("Received TEXT")
+                await manager.broadcast(text)
 
             data = message.get("bytes")
             if data is not None:
-                await manager.broadcast_bytes(data, websocket)
+                # print("Received BYTES")
+                await manager.broadcast_bytes(data)
 
     finally:
         manager.disconnect(websocket)

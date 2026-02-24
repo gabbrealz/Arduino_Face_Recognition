@@ -19,7 +19,6 @@ export default function App() {
 
     socket.onopen = () => {
       console.log("WebSocket connected");
-      socket.send("STREAM ON");
     };
 
     socket.onmessage = (event) => {

@@ -39,12 +39,16 @@ def on_disconnect(client, packet, exc=None):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    client = MQTTClient("fastapi-client")
-    client.on_connect = on_connect
-    client.on_message = on_message
-    client.on_disconnect = on_disconnect
-    await client.connect(MQTT_BROKER, MQTT_PORT)
-    app.state.mqtt_client = client
+    try:
+        client = MQTTClient("fastapi-client")
+        client.on_connect = on_connect
+        client.on_message = on_message
+        client.on_disconnect = on_disconnect
+        await client.connect(MQTT_BROKER, MQTT_PORT)
+    except ConnectionRefusedError:
+        pass
+    else:
+        app.state.mqtt_client = client
 
     yield
 
