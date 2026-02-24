@@ -2,8 +2,8 @@ import { useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import CameraApp from "./components/CameraApp";
 import PopupOverlay from "./components/PopupOverlay";
+import AdminHomepage from "./pages/AdminHomepage";
 import './App.css';
-
 export default function App() {
   const [capturedImage, setCapturedImage] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
@@ -38,10 +38,8 @@ export default function App() {
           )}
 
           <Routes>
-            <Route 
-              path="/" 
-              element={<CameraApp onCapture={handleCapture} />} 
-            />
+            <Route path="/" element={<CameraApp onCapture={handleCapture} />} />
+            <Route path="/admin" element={<AdminHomepage />} />
           </Routes>
         </main>
 
