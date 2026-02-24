@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import CameraApp from "./components/CameraApp";
 import PopupOverlay from "./components/PopupOverlay";
-import "./App.css";
-
+import AdminHomepage from "./pages/AdminHomepage";
+import './App.css';
 export default function App() {
   const [capturedImage, setCapturedImage] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
@@ -30,7 +30,7 @@ export default function App() {
 
         const imageUrl = URL.createObjectURL(blob);
         setStreamImage((prev) => {
-          if (prev) URL.revokeObjectURL(prev); // cleanup old blob
+          if (prev) URL.revokeObjectURL(prev); 
           return imageUrl;
         });
       } else {
@@ -78,15 +78,8 @@ export default function App() {
           )}
 
           <Routes>
-            <Route
-              path="/"
-              element={
-                <CameraApp
-                  streamImage={streamImage}
-                  onCapture={handleCapture}
-                />
-              }
-            />
+            <Route path="/" element={<CameraApp onCapture={handleCapture} />} />
+            <Route path="/admin" element={<AdminHomepage />} />
           </Routes>
         </main>
 
