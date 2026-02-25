@@ -81,7 +81,6 @@ void sendImageToSocket() {
 
     wsClient.sendBinary((const char*) fb->buf, fb->len);
     esp_camera_fb_return(fb);
-    Serial.println("Image sent");
 }
 
 // ===================================================================================
