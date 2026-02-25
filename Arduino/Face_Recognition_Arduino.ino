@@ -1,8 +1,8 @@
 #include <LiquidCrystal_I2C.h>
 #include <WiFiS3.h>
-#include <ArduinoHttpClient.h>
-#include <ArduinoJson.h>
 #include <ArduinoWebsockets.h>
+#include <ArduinoJson.h>
+#include <PubSubClient.h>
 
 // ===================================================================================
 // COMPONENT PINS ====================================================================
@@ -15,22 +15,65 @@
 // ===================================================================================
 // CONNECTION INFO ===================================================================
 
-char ssid[]           = "PLDTHOMEFIBRM764a";
-char password[]       = "AgotPerez@25";
-char server_host[]    = "192.168.1.168";
-uint16_t server_port  = 8000;
+char ssid[]             = "PLDTHOMEFIBRM764a";
+char password[]         = "AgotPerez@25";
+char server_host[]      = "192.168.1.168";
+uint16_t mqtt_port      = 1883;
+
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient);
 
 // ===================================================================================
-// COMPONENTS & LOGIC VARIABLES ======================================================
+// WIFI & MQTT =======================================================================
+
+void connectWiFi(bool reconnect = false) {
+    Serial.print(reconnect ? "Reconnecting to WiFi" : "Connecting to WiFi");
+    while (WiFi.begin(ssid, password) != WL_CONNECTED) {
+        delay(2000);
+        Serial.print('.');
+    }
+    Serial.print("\nConnected to WiFi!");
+}
+
+void connectMQTT(bool reconnect = false) {
+    Serial.print(reconnect ? "Reconnecting to MQTT" : "Connecting to MQTT");
+    while (!mqttClient.connected()) {
+        if (mqttClient.connect("mqttClient")) {
+            mqttClient.subscribe("arduino-r4/input");
+        }
+        else {
+            Serial.print('.');
+            delay(2000);
+        }
+    }
+    Serial.print("\nConnected to MQTT!");
+}
+
+// ===================================================================================
+// APPLICATION LOGIC =================================================================
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+bool buttonAlreadyPressed = false;
+bool requestSent = false;
+
+byte loadingStep = 0;
+unsigned long loadingTimestamp = 0;
+
+unsigned long nonBlockingDelayTimestamp = millis();
 
 // ===================================================================================
 // HELPERS ===========================================================================
 
+void nonBlockingDelay(unsigned long duration) {
+    while (millis() - nonBlockingDelayTimestamp < duration) {
+        mqttClient.loop();
+    }
+}
+
 void successTone() {
     tone(PIEZO, 1200, 150);
-    delay(200);
+    nonBlockingDelay(200);
     tone(PIEZO, 1600, 200);
 }
 
@@ -38,117 +81,159 @@ void errorTone() {
     tone(PIEZO, 300, 400);
 }
 
+void lcdClearRow(byte row) {
+    lcd.setCursor(0,row);
+    lcd.print("                ");
+    lcd.setCursor(0,row);
+}
+
+void lcdPrintSuccess(String message) {
+    lcd.clear();
+    lcd.print("    SUCCESS");
+    lcd.setCursor(0,1);
+    lcd.print(message);
+}
+
+void lcdPrintError(String message) {
+    lcd.clear();
+    lcd.print("     ERROR");
+    lcd.setCursor(0,1);
+    lcd.print(message);
+}
+
+void updateLoading() {
+    if (millis() - loadingTimestamp < 750) return;
+    if (loadingStep == 0) {
+        lcdClearRow(0);
+        lcd.print("Loading");
+        loadingStep++;
+    }
+    else if (loadingStep < 4) {
+        lcd.print(".");
+        loadingStep++;
+    }
+    else {
+        loadingStep = 0;
+    }
+    loadingTimestamp = millis();
+}
+
 // ===================================================================================
-// SETUP AND LOOP ====================================================================
+// MQTT CALLBACK =====================================================================
+
+void mqttCallback(char* topic, byte* payload, unsigned int length) {
+    Serial.print("MQTT message arrived");
+
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, payload, length);
+
+    if (error) {
+        Serial.print("JSON failed: ");
+        Serial.println(error.c_str());
+        return;
+    }
+
+    const char* request = doc["req"];
+
+    if (strcmp(request, "ATTND") == 0) {
+        requestSent = false;
+        lcd.clear();
+
+        if (doc["success"].as<bool>()) {
+            lcdPrintSuccess(doc["msg"]);
+            digitalWrite(GREEN_LED, HIGH);
+            successTone();
+            nonBlockingDelay(2000);
+
+            digitalWrite(GREEN_LED, LOW);
+            lcd.clear();
+            lcd.print("READY");
+        }
+        else {
+            lcdPrintError(doc["msg"]);
+            digitalWrite(RED_LED, HIGH);
+            errorTone();
+            nonBlockingDelay(2000);
+
+            digitalWrite(RED_LED, LOW);
+            lcd.clear();
+            lcd.print("READY");
+        }
+    }
+    else if (strcmp(request, "RGSTR") == 0) {
+        requestSent = false;
+        lcd.clear();
+
+        if (doc["success"].as<bool>()) {
+            lcdPrintSuccess(doc["msg"]);
+            digitalWrite(GREEN_LED, HIGH);
+            successTone();
+            nonBlockingDelay(2000);
+
+            digitalWrite(GREEN_LED, LOW);
+            lcd.clear();
+            lcd.print("READY");
+        }
+        else {
+            lcdPrintError(doc["msg"]);
+            digitalWrite(RED_LED, HIGH);
+            errorTone();
+            nonBlockingDelay(2000);
+
+            digitalWrite(RED_LED, LOW);
+            lcd.clear();
+            lcd.print("READY");
+        }
+    }
+}
+
+// ===================================================================================
+// SETUP & LOOP ======================================================================
 
 void setup() {
+    Serial.begin(115200);
 
-  pinMode(BUTTON, INPUT_PULLUP);
-  pinMode(GREEN_LED, OUTPUT);
-  pinMode(RED_LED, OUTPUT);
-  pinMode(PIEZO, OUTPUT);
+    pinMode(BUTTON, INPUT_PULLUP);
+    pinMode(GREEN_LED, OUTPUT);
+    pinMode(RED_LED, OUTPUT);
+    pinMode(PIEZO, OUTPUT);
 
-  lcd.init();
-  lcd.backlight();
-  lcd.setCursor(0,0);
-  lcd.print("Attendance");
-  lcd.setCursor(0,1);
-  lcd.print("System Ready");
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0,0);
+    lcd.print("Attendance");
+    lcd.setCursor(0,1);
+    lcd.print("System Ready");
 
-  Serial.begin(115200);
+    mqttClient.setServer(mqtt_server, 1883);
+    mqttClient.setBufferSize(512);
+    mqttClient.setCallback(mqttCallback);
 
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("WiFi connected");
+    connectWiFi();
+    connectMQTT();
 
-  delay(2000);
+    delay(1000);
 }
 
 void loop() {
+    if (WiFi.status != WL_CONNECTED) connectWiFi(true);
+    if (!mqttClient.connected()) connectMQTT(true);
+    mqttClient.loop();
 
-  if (digitalRead(BUTTON) == LOW) {
-
-    delay(50);
-
-    if (digitalRead(BUTTON) == LOW) {
-      delay(20);
-
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.print("Capturing...");
-
-      String endpoint = getUploadImageEndpoint();
-      if (endpoint == "") {
-        lcd.clear();
-        lcd.setCursor(0,0);
-        lcd.print("Network error");
-        
-        errorTone();
-        delay(2000);
-
-        digitalWrite(RED_LED, LOW);
-        lcd.clear();
-        lcd.print("Ready");
+    if (requestSent) {
+        updateLoading();
         return;
-      }
-
-      wsClient.send(endpoint); // replace Serial1.print(endpoint)
-
-      String response = "";
-      unsigned long startTime = millis();
-
-      while (millis() - startTime < 5000) {
-        wsClient.poll();
-        if (wsClient.available()) {
-          response = wsClient.readString();
-          response.trim();
-          break;
-        }
-      }
-
-      lcd.clear();
-      lcd.print("Ready");
-
-      delay(500);
     }
-  }
-}
 
-String getUploadImageEndpoint() {
+    bool pressed = digitalRead(BUTTON) == LOW;
 
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("WiFi not connected");
-    return "";
-  }
-
-  HttpClient client;
-  client.get("http://localhost:8000/image-endpoint");
-
-  int statusCode = client.responseStatusCode();
-  String response = client.responseBody();
-
-  if (statusCode != 200) {
-    Serial.print("HTTP error: ");
-    Serial.println(statusCode);
-    return "";
-  }
-
-  DynamicJsonDocument doc(256);
-  DeserializationError error = deserializeJson(doc, response);
-
-  if (error) {
-    Serial.print("JSON parse failed: ");
-    Serial.println(error.c_str());
-    return "";
-  }
-
-  const char* endpoint = doc["endpoint"];
-  if (endpoint == nullptr) {
-    return "";
-  }
-
-  return String(endpoint);
+    if (pressed) {
+        buttonAlreadyPressed = true;
+    }
+    else if (buttonAlreadyPressed) {
+        mqttClient.publish("arduino-r4/output", "CLICK");
+        requestSent = true;
+        lcd.clear();
+        buttonAlreadyPressed = false;
+    }
 }
