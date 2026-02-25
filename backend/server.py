@@ -25,11 +25,10 @@ from database.db import DB
 # MQTT CLIENT =====================================================================================
 
 def on_connect(client, flags, rc, properties):
-    print("Connected to MQTT")
-    client.subscribe("camera/feed")
+    logger.info("Connected to MQTT")
 
 def on_message(client, topic, payload, qos, properties):
-    print(f"Received on {topic}")
+    logger.info(f"Received on {topic}")
 
 def on_disconnect(client, packet, exc=None):
     logger.info("Disconnected from MQTT")
@@ -39,8 +38,7 @@ def on_disconnect(client, packet, exc=None):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.mode = "ATTENDANCE"
-    client = MQTTClient("fastapi-client")
+    client = MQTTClient("fastapi-backend")
     client.on_connect = on_connect
     client.on_message = on_message
     client.on_disconnect = on_disconnect

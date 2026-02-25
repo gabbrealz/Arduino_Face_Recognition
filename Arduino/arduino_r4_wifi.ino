@@ -231,7 +231,7 @@ void loop() {
     if (pressed) {
         buttonAlreadyPressed = true;
     }
-    else if (buttonAlreadyPressed && millis() - lastRequestTimestamp > 1000) {
+    else if (buttonAlreadyPressed && millis() - lastRequestTimestamp > 2000) {
         mqttClient.publish("arduino-r4/output", "CLICK");
         requestSent = true;
         lcd.clear();
