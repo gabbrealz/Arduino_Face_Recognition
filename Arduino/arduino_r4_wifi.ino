@@ -103,7 +103,14 @@ void lcdPrintError(String message) {
 }
 
 void updateLoading() {
-    if (millis() - loadingTimestamp < 750) return;
+    unsigned long now = millis();
+
+    if (now - loadingTimestamp < 750) return;
+    if (now - lastRequestTimestamp >= 12000) {
+        requestSent = false;
+        lcdPrintError("No response");
+    }
+
     if (loadingStep == 0) {
         lcdClearRow(0);
         lcd.print("Loading");
