@@ -39,7 +39,7 @@ void connectMQTT(bool reconnect = false) {
     Serial.print(reconnect ? "Reconnecting to MQTT" : "Connecting to MQTT");
     while (!mqttClient.connected()) {
         if (mqttClient.connect("arduino-r4")) {
-            mqttClient.subscribe("arduino-r4/input", 1);
+            mqttClient.subscribe("arduino-r4/input", 2);
         }
         else {
             Serial.print('.');
@@ -238,12 +238,14 @@ void loop() {
     if (pressed) {
         buttonAlreadyPressed = true;
     }
-    else if (buttonAlreadyPressed && millis() - lastRequestTimestamp > 2000) {
-        mqttClient.publish("arduino-r4/output", "CLICK", false, 1);
+    else if (buttonAlreadyPressed && millis() - lastRequestTimestamp > 3000) {
+        mqttClient.publish("arduino-r4/output", "CLICK", false, 2);
         requestSent = true;
         lcd.clear();
         
         buttonAlreadyPressed = false;
         lastRequestTimestamp = millis();
+
+        Serial.println("Message sent to MQTT");
     }
 }
