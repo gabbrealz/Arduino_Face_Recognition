@@ -48,7 +48,7 @@ WebsocketsClient wsClient;
 
 void connectWiFi(bool reconnect = false) {
     Serial.print(reconnect ? "Reconnecting to WiFi" : "Connecting to WiFi");
-    while (WiFi.begin(ssid, password) != WL_CONNECTED) {
+    while (WiFi.status() != WL_CONNECTED) {
         delay(2000);
         Serial.print('.');
     }
@@ -94,12 +94,15 @@ void setup() {
     while (!Serial);
 
     initializeCamera();
+
+    WiFi.begin(ssid, password)
     connectWiFi();
+    
     connectWebsocket();
 }
 
 void loop() {
-    if (WiFi.status != WL_CONNECTED) connectWiFi(true);
+    if (WiFi.status() != WL_CONNECTED) connectWiFi(true);
     if (wsClient.available()) {
         wsClient.poll();
         sendImageToSocket();
@@ -132,8 +135,8 @@ esp_err_t initializeCamera() {
     config.pin_reset = RESET_GPIO_NUM;
     config.xclk_freq_hz = 20000000;
     config.pixel_format = PIXFORMAT_JPEG;
-    config.frame_size = FRAMESIZE_QVGA;
-    config.jpeg_quality = 12;
+    config.frame_size = FRAMESIZE_CIF;
+    config.jpeg_quality = 10;
     config.fb_count = 2;
 
     esp_err_t err = esp_camera_init(&config);
@@ -143,7 +146,7 @@ esp_err_t initializeCamera() {
     }
 
     sensor_t * s = esp_camera_sensor_get();
-    s->set_framesize(s, FRAMESIZE_QVGA);
+    s->set_framesize(s, FRAMESIZE_CIF);
 
     Serial.println("Camera initialization success!");
     return ESP_OK;
