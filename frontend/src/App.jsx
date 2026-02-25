@@ -16,8 +16,14 @@ export default function App() {
   const wsRef = useRef(null);
   const mqttRef = useRef(null);
 
+  const isLoadingRef = useRef(isLoading);
+
   useEffect(() => {
-    const socket = new WebSocket("ws://192.168.1.168:8000/ws");
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
+
+  useEffect(() => {
+    const socket = new WebSocket("ws://192.168.1.168:8000/camera");
     socket.binaryType = "arraybuffer";
 
     socket.onopen = () => {
@@ -51,29 +57,33 @@ export default function App() {
     };
   }, []);
 
+
   useEffect(() => {
     const mqttClient = mqtt.connect("ws://192.168.1.168:9001");
     
     mqttClient.on("connect", () => {
       console.log("MQTT connected");
 
-      mqttClient.subscribe("arduino-r4/output", { qos: 1 }, (err) => {
+      mqttClient.subscribe("arduino-r4/output", { qos: 2 }, (err) => {
         if (err) console.error("Subscribe error:", err);
       });
 
-      mqttClient.subscribe("frontend/attendance-log/response", { qos: 1 }, (err) => {
+      mqttClient.subscribe("frontend/attendance-log/response", { qos: 2 }, (err) => {
         if (err) console.error("Subscribe error:", err);
       });
 
     });
 
     mqttClient.on("message", (topic, message) => {
+      const messageStr = new TextDecoder().decode(message);
+      console.log(messageStr);
+
       if (topic === "arduino-r4/output") {
         setCapturedImage(streamImage);
         setIsLoading(true);
       }
       else if (topic === "frontend/attendance-log/response") {
-        data = JSON.parse(message);
+        const data = JSON.parse(messageStr);
         setIsLoading(false);
         setRecognitionResult(data);
       }
