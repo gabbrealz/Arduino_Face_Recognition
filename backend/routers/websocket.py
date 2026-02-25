@@ -12,15 +12,6 @@ async def streaming_endpoint(websocket: WebSocket):
         while True:
             message = await websocket.receive()
 
-            if message["type"] == "websocket.disconnect":
-                print("Received disconnect message")
-                break
-
-            text = message.get("text")
-            if text is not None:
-                print("Received TEXT")
-                await stream_manager.broadcast(text, websocket)
-
             data = message.get("bytes")
             if data is not None:
                 print("Received BYTES")

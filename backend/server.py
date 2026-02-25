@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from gmqtt import Client as MQTTClient
 from contextlib import asynccontextmanager
-from time import time
+from time import time, sleep
 import asyncio
 import uvicorn
 import logging
@@ -40,17 +40,17 @@ def on_disconnect(client, packet, exc=None):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.mode = "ATTENDANCE"
+    client = MQTTClient("fastapi-client")
+    client.on_connect = on_connect
+    client.on_message = on_message
+    client.on_disconnect = on_disconnect
 
-    try:
-        client = MQTTClient("fastapi-client")
-        client.on_connect = on_connect
-        client.on_message = on_message
-        client.on_disconnect = on_disconnect
-        await client.connect(MQTT_BROKER, MQTT_PORT)
-    except ConnectionRefusedError:
-        pass
-    else:
-        app.state.mqtt_client = client
+    for _ in range(10):
+        try: await client.connect(MQTT_BROKER, MQTT_PORT)
+        except ConnectionRefusedError: sleep(2)
+        else:
+            app.state.mqtt_client = client
+            break
 
     yield
 
@@ -82,8 +82,7 @@ async def log_requests(request: Request, call_next):
 
 app.include_router(students.router, prefix="/students")
 app.include_router(attendance.router, prefix="/attendance")
-app.include_router(websocket.router, prefix="/ws")
-app.include_router(modes.router, prefix="/modes")
+app.include_router(websocket.router, prefix="/camera")
 
 # =================================================================================================
 # RUN THE APP =====================================================================================

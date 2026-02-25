@@ -9,7 +9,7 @@ from services.image import Image, Face
 
 router = APIRouter()
 
-@router.get("/", status_code=status.HTTP_200_OK)
+@router.get("", status_code=status.HTTP_200_OK)
 async def get_attendance_logs():
     try:
         logs = DB.get_attendance_logs()
@@ -31,7 +31,7 @@ async def get_attendance_logs():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No attendance logs found")
     return logs
 
-@router.post("/", status_code=status.HTTP_200_OK)
+@router.post("", status_code=status.HTTP_200_OK)
 async def log_student_attendance(request: Request):
     img_bytes = await request.body()
 

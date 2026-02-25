@@ -11,7 +11,7 @@ from models.request import CreateStudentRequestBody
 
 router = APIRouter()
 
-@router.get("/", status_code=status.HTTP_200_OK)
+@router.get("", status_code=status.HTTP_200_OK)
 async def get_students():
     students = DB.get_students()
     if not students:
@@ -19,7 +19,7 @@ async def get_students():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No students found")
     return students
 
-@router.post("/")
+@router.post("")
 async def create_student(req_body: CreateStudentRequestBody):
     try:
         DB.insert_student(req_body.student_number, req_body.name, req_body.email)
