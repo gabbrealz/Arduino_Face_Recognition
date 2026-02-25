@@ -59,8 +59,8 @@ async def run_activity(client, img_bytes):
         frontend_payload["msg"] = f"Logged attendance for {result['student']['full_name']}"
         frontend_payload["student"] = result["student"]
 
-    client.publish("arduino-r4/input", json.dumps(arduino_r4_payload))
-    client.publish("frontend/attendance-log/response", json.dumps(frontend_payload))
+    client.publish("arduino-r4/input", json.dumps(arduino_r4_payload), qos=2)
+    client.publish("frontend/attendance-log/response", json.dumps(frontend_payload), qos=2)
 
 
 def on_connect(client, flags, rc, properties):
@@ -70,6 +70,7 @@ def on_message(client, topic, payload, qos, properties):
     logger.info(f"Received on {topic}")
 
     if topic != "arduino-r4/output" and payload != "CLICK": return
+    logger.info("Received message from 'arduino-r4/output'")
 
     app = client._appdata.get("app")
 
@@ -114,11 +115,11 @@ async def lifespan(app: FastAPI):
     for _ in range(10):
         try:
             await client.connect(MQTT_BROKER, MQTT_PORT)
-        except ConnectionRefusedError:
+        except (ConnectionRefusedError, OSError):
             logger.info("MQTT broker unavailable, retrying in 2s...")
             await asyncio.sleep(2)
         else:
-            await client.subscribe([("arduino-r4/output", 2)])
+            client.subscribe("arduino-r4/output", qos=2)
             app.state.mqtt_client = client
             break
     else:
