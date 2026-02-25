@@ -1,8 +1,6 @@
 #include "esp_camera.h"
 #include <WiFi.h>
-#include <HTTPClient.h>
 #include <ArduinoWebsockets.h>
-#include <ArduinoJson.h>
 
 #include "esp_timer.h"
 #include "img_converters.h"
@@ -38,17 +36,76 @@ using namespace websockets;
 
 const char* ssid            = "PLDTHOMEFIBRM764a";
 const char* password        = "AgotPerez@25";
-const char* server_host     = "192.168.1.168";
-const uint16_t server_port  = 8000;
+const char* serverHost      = "192.168.1.168";
+const uint16_t serverPort   = 8000;
 
-WebsocketsClient streamClient;
+const char* wsEndpoint      = "/camera";
 
-bool stream = false;
+WebsocketsClient wsClient;
+
+// ===================================================================================
+// WIFI & WEBSOCKET ==================================================================
+
+void connectWiFi(bool reconnect = false) {
+    Serial.print(reconnect ? "Reconnecting to WiFi" : "Connecting to WiFi");
+    while (WiFi.begin(ssid, password) != WL_CONNECTED) {
+        delay(2000);
+        Serial.print('.');
+    }
+    Serial.print("\nConnected to WiFi!");
+}
+
+void connectWebsocket(bool reconnect = false) {
+    Serial.print(reconnect ? "Reconnecting to Websocket" : "Connecting to Websocket");
+    while (!wsClient.connect(serverHost, serverPort, wsEndpoint)) {
+        Serial.print('.');
+        delay(2000);
+    }
+    Serial.print("\nConnected to Websocket!");
+}
+
+// ===================================================================================
+// APPLICATION LOGIC =================================================================
+
+
+
+// ===================================================================================
+// HELPERS ===========================================================================
+
+void sendImageToSocket() {
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (!fb) {
+        Serial.println("Image capture failed");
+        return;
+    }
+
+    wsClient.sendBinary((const char*) fb->buf, fb->len);
+    esp_camera_fb_return(fb);
+    Serial.println("Image sent");
+}
+
+// ===================================================================================
+// SETUP AND LOOP ====================================================================
+
+void setup() {
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+    Serial.begin(115200);
+    while (!Serial);
+
+    initializeCamera();
+    connectWiFi();
+    connectWebsocket();
+}
+
+void loop() {
+    wsClient.poll();
+    if (wsClient.available()) sendImageToSocket();
+}
 
 // ===================================================================================
 // CAMERA SETUP ======================================================================
 
-esp_err_t init_camera() {
+esp_err_t initializeCamera() {
     camera_config_t config;
     config.ledc_channel = LEDC_CHANNEL_0;
     config.ledc_timer = LEDC_TIMER_0;
@@ -75,61 +132,14 @@ esp_err_t init_camera() {
     config.fb_count = 2;
 
     esp_err_t err = esp_camera_init(&config);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK) {
+        Serial.println("Camera initialization failed");
+        return err;
+    }
 
     sensor_t * s = esp_camera_sensor_get();
     s->set_framesize(s, FRAMESIZE_QVGA);
 
+    Serial.println("Camera initialization success!");
     return ESP_OK;
-}
-
-// ===================================================================================
-// WIFI + WEBSOCKET ==================================================================
-
-esp_err_t init_wifi_ws() {
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) delay(500);
-
-    streamClient.onMessage([](WebsocketsMessage msg) {
-        String message = msg.data();
-        message.trim();
-
-        if (message == "STREAM") stream = true;
-        else if (message == "!STREAM") stream = false;
-        else sendImageToApi(message);
-    });
-
-    bool connected = streamClient.connect(server_host, server_port, "/ws");
-    if (!connected) return ESP_FAIL;
-
-    streamClient.send("hello from ESP32 camera stream!");
-    return ESP_OK;
-}
-
-// ===================================================================================
-// HELPERS ===========================================================================
-
-void sendImageToSocket() {
-    camera_fb_t *fb = esp_camera_fb_get();
-    if (!fb) return;
-
-    streamClient.sendBinary((const char*) fb->buf, fb->len);
-    esp_camera_fb_return(fb);
-}
-
-// ===================================================================================
-// SETUP AND LOOP ====================================================================
-
-void setup() {
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
-    Serial.begin(115200);
-
-    init_camera();
-    init_wifi_ws();
-}
-
-void loop() {
-    streamClient.poll();
-
-    if (stream) sendImageToSocket();
 }
