@@ -1,6 +1,5 @@
 #include <LiquidCrystal_I2C.h>
 #include <WiFiS3.h>
-#include <ArduinoWebsockets.h>
 #include <ArduinoJson.h>
 #include <MQTT.h>
 
@@ -32,11 +31,11 @@ void connectWiFi(bool reconnect = false) {
         delay(2000);
         Serial.print('.');
     }
-    Serial.print("\nConnected to WiFi!");
+    Serial.println("\nConnected to WiFi!");
 }
 
 void connectMQTT(bool reconnect = false) {
-    Serial.print(reconnect ? "Reconnecting to MQTT" : "Connecting to MQTT");
+    Serial.println(reconnect ? "Reconnecting to MQTT" : "Connecting to MQTT");
     while (!mqttClient.connected()) {
         if (mqttClient.connect("arduino-r4")) {
             mqttClient.subscribe("arduino-r4/input", 2);
@@ -46,7 +45,7 @@ void connectMQTT(bool reconnect = false) {
             delay(2000);
         }
     }
-    Serial.print("\nConnected to MQTT!");
+    Serial.println("\nConnected to MQTT!");
 }
 
 // ===================================================================================
@@ -67,6 +66,7 @@ unsigned long nonBlockingDelayTimestamp = millis();
 // HELPERS ===========================================================================
 
 void nonBlockingDelay(unsigned long duration) {
+    nonBlockingDelayTimestamp = millis();
     while (millis() - nonBlockingDelayTimestamp < duration) {
         mqttClient.loop();
     }
@@ -130,7 +130,7 @@ void updateLoading() {
 // MQTT CALLBACK =====================================================================
 
 void mqttCallback(String &topic, String &payload) {
-    Serial.print("MQTT message arrived");
+    Serial.println("MQTT message arrived");
 
     StaticJsonDocument<256> doc;
     DeserializationError error = deserializeJson(doc, payload.c_str());
@@ -142,13 +142,18 @@ void mqttCallback(String &topic, String &payload) {
     }
 
     const char* request = doc["req"];
+    const char* msg = doc["msg"];
+    
+    Serial.print(request);
+    Serial.print(": ");
+    Serial.println(msg);
 
     if (strcmp(request, "ATTND") == 0) {
         requestSent = false;
         lcd.clear();
 
         if (doc["success"].as<bool>()) {
-            lcdPrintSuccess(doc["msg"]);
+            lcdPrintSuccess(msg);
             digitalWrite(GREEN_LED, HIGH);
             successTone();
             nonBlockingDelay(2000);
@@ -158,7 +163,7 @@ void mqttCallback(String &topic, String &payload) {
             lcd.print("READY");
         }
         else {
-            lcdPrintError(doc["msg"]);
+            lcdPrintError(msg);
             digitalWrite(RED_LED, HIGH);
             errorTone();
             nonBlockingDelay(2000);
@@ -173,7 +178,7 @@ void mqttCallback(String &topic, String &payload) {
         lcd.clear();
 
         if (doc["success"].as<bool>()) {
-            lcdPrintSuccess(doc["msg"]);
+            lcdPrintSuccess(msg);
             digitalWrite(GREEN_LED, HIGH);
             successTone();
             nonBlockingDelay(2000);
@@ -183,7 +188,7 @@ void mqttCallback(String &topic, String &payload) {
             lcd.print("READY");
         }
         else {
-            lcdPrintError(doc["msg"]);
+            lcdPrintError(msg);
             digitalWrite(RED_LED, HIGH);
             errorTone();
             nonBlockingDelay(2000);
@@ -212,19 +217,18 @@ void setup() {
     lcd.print("Attendance");
     lcd.setCursor(0,1);
     lcd.print("System Ready");
-
-    mqttClient.setServer(mqttServer, mqttPort);
-    mqttClient.setBufferSize(512);
-    mqttClient.setCallback(mqttCallback);
-
+    
     connectWiFi();
+    
+    mqttClient.begin(mqttServer, wifiClient);
+    mqttClient.onMessage(mqttCallback);
     connectMQTT();
 
     delay(1000);
 }
 
 void loop() {
-    if (WiFi.status != WL_CONNECTED) connectWiFi(true);
+    if (WiFi.status() != WL_CONNECTED) connectWiFi(true);
     if (!mqttClient.connected()) connectMQTT(true);
     mqttClient.loop();
 
