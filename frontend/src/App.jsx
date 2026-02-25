@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import mqtt from "mqtt";
 import CameraApp from "./components/CameraApp";
 import PopupOverlay from "./components/PopupOverlay";
 import AdminHomepage from "./pages/AdminHomepage";
@@ -9,6 +10,7 @@ export default function App() {
   const [showPopup, setShowPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [streamImage, setStreamImage] = useState(null);
+  const [recognitionResult, setRecognitionResult] = useState(null);
 
   const wsRef = useRef(null);
 
@@ -47,17 +49,46 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const mqttClient = mqtt.connect("mqtt://ikaw na bahala gabb");
+    
+    mqttClient.on("connect", () => {
+      console.log("MQTT connected");
+      mqttClient.subscribe("ikaw na bahala gabb");
+    });
+
+    mqttClient.on("message", (topic, message) => {
+      const payload = message.toString();
+      console.log('MQTT Received: [${topic}]:', payload);
+      setRecognitionResult(payload);
+
+      setIsLoading(false);
+      setShowPopup(true);
+    });
+
+    return () => {
+      if (mqttClient) mqttClient.end();
+    };
+  }, []);
+
   // 📸 Capture current frame
   const handleCapture = useCallback(() => {
     if (isLoading || !streamImage) return;
 
     setCapturedImage(streamImage);
+<<<<<<< HEAD
       
+=======
+    setIsLoading(true);
+>>>>>>> ca4031587ef27b7624d75015f11b81d47c445745
   }, [isLoading, streamImage]);
 
   const handleClose = () => {
     setShowPopup(false);
-    setTimeout(() => setCapturedImage(null), 100);
+    setTimeout(() => {
+      setCapturedImage(null);
+      setRecognitionResult(null);
+    }, 100);
   };
 
   return (
@@ -78,7 +109,11 @@ export default function App() {
         </main>
 
         {showPopup && capturedImage && (
-          <PopupOverlay image={capturedImage} onClose={handleClose} />
+          <PopupOverlay
+            image={capturedImage}
+            result={recognitionResult}
+            onClose={handleClose}
+          />
         )}
       </div>
     </BrowserRouter>

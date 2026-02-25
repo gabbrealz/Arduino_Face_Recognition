@@ -5,7 +5,7 @@ load_dotenv()
 CONTEXT_PATH = os.getenv("CONTEXT_PATH", "/marcusan-attendance")
 
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
-MQTT_PORT = os.getenv("MQTT_PORT", "1883")
+MQTT_PORT = os.getenv("MQTT_PORT", 1883)
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,6 +32,19 @@ def on_message(client, topic, payload, qos, properties):
 
 def on_disconnect(client, packet, exc=None):
     logger.info("Disconnected from MQTT")
+    if exc: logger.warning(f"Disconnect due to exception: {exc}")
+    asyncio.create_task(reconnect(client))
+
+async def reconnect(client):
+    while True:
+        try:
+            logger.info("Attempting MQTT reconnect...")
+            await client.connect(MQTT_BROKER, MQTT_PORT)
+            logger.info("Reconnected to MQTT broker!")
+            break
+        except Exception as e:
+            logger.warning(f"Reconnect failed: {e}")
+            await asyncio.sleep(2)
 
 # =================================================================================================
 # APP CONTEXT =====================================================================================
@@ -44,11 +57,16 @@ async def lifespan(app: FastAPI):
     client.on_disconnect = on_disconnect
 
     for _ in range(10):
-        try: await client.connect(MQTT_BROKER, MQTT_PORT)
-        except ConnectionRefusedError: sleep(2)
+        try:
+            await client.connect(MQTT_BROKER, MQTT_PORT)
+        except ConnectionRefusedError:
+            logger.info("MQTT broker unavailable, retrying in 2s...")
+            await asyncio.sleep(2)
         else:
             app.state.mqtt_client = client
             break
+    else:
+        logger.error("Failed to connect to MQTT broker after 10 attempts")
 
     yield
 
