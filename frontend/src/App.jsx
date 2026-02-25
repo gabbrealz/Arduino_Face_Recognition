@@ -52,13 +52,8 @@ export default function App() {
   const handleCapture = useCallback(() => {
     if (isLoading || !streamImage) return;
 
-    setIsLoading(true);
-
-    setTimeout(() => {
-      setCapturedImage(streamImage);
-      setShowPopup(true);
-      setIsLoading(false);
-    }, 200);
+    setCapturedImage(streamImage);
+      
   }, [isLoading, streamImage]);
 
   const handleClose = () => {
@@ -78,7 +73,7 @@ export default function App() {
           )}
 
           <Routes>
-            <Route path="/" element={<CameraApp onCapture={handleCapture} />} />
+            <Route path="/" element={<CameraApp streamImage={streamImage} />} />
             <Route path="/admin" element={<AdminHomepage />} />
           </Routes>
         </main>

@@ -1,4 +1,4 @@
-export default function CameraApp({ streamImage, onCapture }) {
+export default function CameraApp({ streamImage }) {
   return (
     <div className="camera-app">
       <div className="viewfinder">
