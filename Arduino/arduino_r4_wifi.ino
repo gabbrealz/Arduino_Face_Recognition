@@ -2,7 +2,7 @@
 #include <WiFiS3.h>
 #include <ArduinoWebsockets.h>
 #include <ArduinoJson.h>
-#include <PubSubClient.h>
+#include <MQTT.h>
 
 // ===================================================================================
 // COMPONENT PINS ====================================================================
@@ -21,7 +21,7 @@ char mqttServer[]       = "192.168.1.168";
 uint16_t mqttPort       = 1883;
 
 WiFiClient wifiClient;
-PubSubClient mqttClient(wifiClient);
+MQTTClient mqttClient;
 
 // ===================================================================================
 // WIFI & MQTT =======================================================================
@@ -39,7 +39,7 @@ void connectMQTT(bool reconnect = false) {
     Serial.print(reconnect ? "Reconnecting to MQTT" : "Connecting to MQTT");
     while (!mqttClient.connected()) {
         if (mqttClient.connect("arduino-r4")) {
-            mqttClient.subscribe("arduino-r4/input");
+            mqttClient.subscribe("arduino-r4/input", 1);
         }
         else {
             Serial.print('.');
@@ -122,11 +122,11 @@ void updateLoading() {
 // ===================================================================================
 // MQTT CALLBACK =====================================================================
 
-void mqttCallback(char* topic, byte* payload, unsigned int length) {
+void mqttCallback(String &topic, String &payload) {
     Serial.print("MQTT message arrived");
 
-    JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, payload, length);
+    StaticJsonDocument<256> doc;
+    DeserializationError error = deserializeJson(doc, payload.c_str());
 
     if (error) {
         Serial.print("JSON failed: ");
@@ -232,7 +232,7 @@ void loop() {
         buttonAlreadyPressed = true;
     }
     else if (buttonAlreadyPressed && millis() - lastRequestTimestamp > 2000) {
-        mqttClient.publish("arduino-r4/output", "CLICK");
+        mqttClient.publish("arduino-r4/output", "CLICK", false, 1);
         requestSent = true;
         lcd.clear();
         
