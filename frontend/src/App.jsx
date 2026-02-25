@@ -23,17 +23,16 @@ export default function App() {
 
     socket.onmessage = (event) => {
       if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {
-        const blob =
-          event.data instanceof Blob
-            ? event.data
-            : new Blob([event.data], { type: "image/jpeg" });
+        const blob = event.data instanceof Blob ? event.data : new Blob([event.data], { type: "image/jpeg" });
 
         const imageUrl = URL.createObjectURL(blob);
         setStreamImage((prev) => {
           if (prev) URL.revokeObjectURL(prev); 
           return imageUrl;
         });
-      } else {
+
+      }
+      else {
         console.log("Text message:", event.data);
       }
     };
