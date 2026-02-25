@@ -17,8 +17,8 @@
 
 char ssid[]             = "PLDTHOMEFIBRM764a";
 char password[]         = "AgotPerez@25";
-char server_host[]      = "192.168.1.168";
-uint16_t mqtt_port      = 1883;
+char mqttServer[]       = "192.168.1.168";
+uint16_t mqttPort       = 1883;
 
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
@@ -38,7 +38,7 @@ void connectWiFi(bool reconnect = false) {
 void connectMQTT(bool reconnect = false) {
     Serial.print(reconnect ? "Reconnecting to MQTT" : "Connecting to MQTT");
     while (!mqttClient.connected()) {
-        if (mqttClient.connect("mqttClient")) {
+        if (mqttClient.connect("arduino-r4")) {
             mqttClient.subscribe("arduino-r4/input");
         }
         else {
@@ -206,7 +206,7 @@ void setup() {
     lcd.setCursor(0,1);
     lcd.print("System Ready");
 
-    mqttClient.setServer(mqtt_server, 1883);
+    mqttClient.setServer(mqttServer, mqttPort);
     mqttClient.setBufferSize(512);
     mqttClient.setCallback(mqttCallback);
 
