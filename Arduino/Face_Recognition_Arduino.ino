@@ -2,19 +2,22 @@
 #include <WiFiS3.h>
 #include <ArduinoHttpClient.h>
 #include <ArduinoJson.h>
+#include <ArduinoWebsockets.h>
 
 #define BUTTON 2
 #define GREEN_LED 3
 #define RED_LED 4
 #define PIEZO 5
 
-char serverAddress[] = "192.168.1.168";
-int port = 8000;
-
-WiFiClient wifi;
-HttpClient client = HttpClient(wifi, serverAddress, port);
+char ssid[]           = "PLDTHOMEFIBRM764a";
+char password[]       = "AgotPerez@25";
+char server_host[]    = "192.168.1.168";
+uint16_t server_port  = 8000;
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+using namespace websockets;
+WebsocketsClient wsClient;
 
 void successTone() {
   tone(PIEZO, 1200, 150);
@@ -26,6 +29,59 @@ void errorTone() {
   tone(PIEZO, 300, 400);
 }
 
+void onMessageCallback(WebsocketsMessage message) {
+  String response = message.data();
+  
+  if (response == "") {
+    digitalWrite(RED_LED, HIGH);
+
+    lcd.clear();
+    lcd.print("Camera Error");
+    errorTone();
+    delay(2000);
+
+    digitalWrite(RED_LED, LOW);
+    lcd.clear();
+    lcd.print("Ready");
+    return;
+  }
+  else {
+    StaticJsonDocument<2048> doc;
+    DeserializationError error = deserializeJson(doc, response);
+
+    if (!error) {
+      if (!doc.containsKey("detail") && doc.containsKey("student")) {
+          JsonObject student = doc["student"].as<JsonObject>();
+          const char* studentNumber = student["student_number"];
+          
+          digitalWrite(GREEN_LED, HIGH);
+
+          lcd.clear();
+          lcd.setCursor(0,0);
+          lcd.print("Welcome");
+
+          lcd.setCursor(0,1);
+          lcd.print(studentNumber);
+      }
+      else {
+          digitalWrite(RED_LED, HIGH);
+          lcd.clear();
+          lcd.setCursor(0,0);
+          lcd.print("Access Denied");
+
+          const char* detailMsg = doc.containsKey("detail") ? doc["detail"] : "Unknown Error";
+          lcd.setCursor(0,1);
+          lcd.print(detailMsg);
+
+          errorTone();
+          delay(3000);
+          digitalWrite(RED_LED, LOW);
+      }
+    }
+  }
+
+}
+
 void setup() {
 
   pinMode(BUTTON, INPUT_PULLUP);
@@ -33,22 +89,36 @@ void setup() {
   pinMode(RED_LED, OUTPUT);
   pinMode(PIEZO, OUTPUT);
 
-  Serial1.begin(115200);   // communication with ESP32
-
   lcd.init();
   lcd.backlight();
-
   lcd.setCursor(0,0);
   lcd.print("Attendance");
   lcd.setCursor(0,1);
   lcd.print("System Ready");
 
-  Serial1.print("STREAM");
+  Serial.begin(115200);
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("WiFi connected");
+
+  bool connected = wsClient.connect("ws://" + String(server_host) + ":" + String(server_port) + "/ws/microcontroller");
+  if (connected) {
+    Serial.println("WebSocket connected");
+    wsClient.send("STREAM"); // replace Serial1.print("STREAM")
+  } else {
+    Serial.println("WebSocket failed to connect");
+  }
 
   delay(2000);
 }
 
 void loop() {
+
+  wsClient.poll(); // important to keep websocket alive
 
   if (digitalRead(BUTTON) == LOW) {
 
@@ -56,7 +126,7 @@ void loop() {
 
     if (digitalRead(BUTTON) == LOW) {
 
-      Serial1.print("!STREAM");
+      wsClient.send("!STREAM"); // replace Serial1.print("!STREAM")
       delay(20);
 
       lcd.clear();
@@ -78,64 +148,17 @@ void loop() {
         return;
       }
 
-      Serial1.print(endpoint);
+      wsClient.send(endpoint); // replace Serial1.print(endpoint)
 
       String response = "";
       unsigned long startTime = millis();
 
       while (millis() - startTime < 5000) {
-        if (Serial1.available()) {
-          response = Serial1.readStringUntil('\n');
+        wsClient.poll();
+        if (wsClient.available()) {
+          response = wsClient.readString();
           response.trim();
           break;
-        }
-      }
-
-      if (response == "") {
-        digitalWrite(RED_LED, HIGH);
-
-        lcd.clear();
-        lcd.print("Camera Error");
-        errorTone();
-        delay(2000);
-
-        digitalWrite(RED_LED, LOW);
-        lcd.clear();
-        lcd.print("Ready");
-        return;
-      }
-      else {
-        StaticJsonDocument<2048> doc;
-        DeserializationError error = deserializeJson(doc, response);
-
-        if (!error) {
-          if (!doc.containsKey("detail") && doc.containsKey("student")) {
-              JsonObject student = doc["student"].as<JsonObject>();
-              const char* studentNumber = student["student_number"];
-              
-              digitalWrite(GREEN_LED, HIGH);
-
-              lcd.clear();
-              lcd.setCursor(0,0);
-              lcd.print("Welcome");
-
-              lcd.setCursor(0,1);
-              lcd.print(studentNumber);
-          }
-          else {
-              digitalWrite(RED_LED, HIGH);
-              lcd.clear();
-              lcd.setCursor(0,0);
-              lcd.print("Access Denied");
-              
-              const char* detailMsg = doc.containsKey("detail") ? doc["detail"] : "Unknown Error";
-              lcd.setCursor(0,1);
-              lcd.print(detailMsg);
-
-              errorTone();
-              delay(3000);
-              digitalWrite(RED_LED, LOW);
-          }
         }
       }
 
@@ -154,7 +177,8 @@ String getUploadImageEndpoint() {
     return "";
   }
 
-  client.get("/image-endpoint");
+  HttpClient client;
+  client.get("http://localhost:8000/image-endpoint");
 
   int statusCode = client.responseStatusCode();
   String response = client.responseBody();
@@ -175,7 +199,6 @@ String getUploadImageEndpoint() {
   }
 
   const char* endpoint = doc["endpoint"];
-
   if (endpoint == nullptr) {
     return "";
   }
