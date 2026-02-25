@@ -60,6 +60,7 @@ bool requestSent = false;
 byte loadingStep = 0;
 unsigned long loadingTimestamp = 0;
 
+unsigned long lastRequestTimestamp = 0;
 unsigned long nonBlockingDelayTimestamp = millis();
 
 // ===================================================================================
@@ -230,10 +231,12 @@ void loop() {
     if (pressed) {
         buttonAlreadyPressed = true;
     }
-    else if (buttonAlreadyPressed) {
+    else if (buttonAlreadyPressed && millis() - lastRequestTimestamp > 1000) {
         mqttClient.publish("arduino-r4/output", "CLICK");
         requestSent = true;
         lcd.clear();
+        
         buttonAlreadyPressed = false;
+        lastRequestTimestamp = millis();
     }
 }
