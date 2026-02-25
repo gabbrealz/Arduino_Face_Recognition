@@ -11,21 +11,8 @@ class Image:
 
     @staticmethod
     async def get_embedding(img):
-        result = await asyncio.to_thread(DeepFace.represent, img, model_name="ArcFace")
+        result = await asyncio.to_thread(DeepFace.represent, img, model_name="ArcFace", enforce_detection=True)
+        if (len(result) == 0 or len(result) > 1):
+            raise ValueError()
+
         return result[0]["embedding"]
-
-class Face:
-    @staticmethod
-    async def image_is_valid(img):
-        try:
-            faces = await asyncio.to_thread(
-                DeepFace.extract_faces,
-                img_path=img,
-                detector_backend="opencv",
-                enforce_detection=True,
-                anti_spoofing=True
-            )
-            return any(face.get("is_real", False) for face in faces)
-
-        except ValueError:
-            return False

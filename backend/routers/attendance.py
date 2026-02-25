@@ -9,6 +9,7 @@ from services.image import Image, Face
 
 router = APIRouter()
 
+
 @router.get("", status_code=status.HTTP_200_OK)
 async def get_attendance_logs():
     try:
@@ -27,9 +28,10 @@ async def get_attendance_logs():
         )
 
     if not logs:
-        logger.info("Get all attendancec logs [NO LOGS FOUND]")
+        logger.info("Get all attendance logs [NO LOGS FOUND]")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No attendance logs found")
     return logs
+
 
 @router.post("", status_code=status.HTTP_200_OK)
 async def log_student_attendance(request: Request):
@@ -40,21 +42,15 @@ async def log_student_attendance(request: Request):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No image data")
 
     img = Image.get_decoded_img(img_bytes)
-
-    now = time()
-    is_valid_img = await Face.image_is_valid(img)
-    logger.info(f"Image validation: {time()-now} secs")
-
-    if not is_valid_img:
-        logger.info("Log student attendance [IMAGE IS INVALID]")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid image"
-        )
     
     now = time()
-    embedding = await Image.get_embedding(img)
-    logger.info(f"Image to embedding: {time()-now} secs")
+    try:
+        embedding = await Image.get_embedding(img)
+    except ValueError:
+        logger.info("Log student attendance [INVALID IMAGE]")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image is invalid")
+    finally:
+        logger.info(f"Image to embedding: {time()-now} secs")
 
     try:
         student_record = DB.log_attendance_for_face(embedding, 0.4)
