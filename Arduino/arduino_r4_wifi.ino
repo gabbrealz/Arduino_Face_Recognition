@@ -82,6 +82,13 @@ void errorTone() {
     tone(PIEZO, 300, 400);
 }
 
+void lcdPrintReset() {
+    lcd.clear();
+    lcd.print("Attendance");
+    lcd.setCursor(0,1);
+    lcd.print("System Ready");
+}
+
 void lcdClearRow(byte row) {
     lcd.setCursor(0,row);
     lcd.print("                ");
@@ -109,6 +116,7 @@ void updateLoading() {
     if (now - lastRequestTimestamp >= 12000) {
         requestSent = false;
         lcdPrintError("No response");
+        nonBlockingDelay(5000);
     }
 
     if (loadingStep == 0) {
@@ -156,21 +164,19 @@ void mqttCallback(String &topic, String &payload) {
             lcdPrintSuccess(msg);
             digitalWrite(GREEN_LED, HIGH);
             successTone();
-            nonBlockingDelay(2000);
+            nonBlockingDelay(5000);
 
             digitalWrite(GREEN_LED, LOW);
-            lcd.clear();
-            lcd.print("READY");
+            lcdPrintReset();
         }
         else {
             lcdPrintError(msg);
             digitalWrite(RED_LED, HIGH);
             errorTone();
-            nonBlockingDelay(2000);
+            nonBlockingDelay(5000);
 
             digitalWrite(RED_LED, LOW);
-            lcd.clear();
-            lcd.print("READY");
+            lcdPrintReset();
         }
     }
     else if (strcmp(request, "RGSTR") == 0) {
@@ -184,8 +190,7 @@ void mqttCallback(String &topic, String &payload) {
             nonBlockingDelay(2000);
 
             digitalWrite(GREEN_LED, LOW);
-            lcd.clear();
-            lcd.print("READY");
+            lcdPrintReset();
         }
         else {
             lcdPrintError(msg);
@@ -194,8 +199,7 @@ void mqttCallback(String &topic, String &payload) {
             nonBlockingDelay(2000);
 
             digitalWrite(RED_LED, LOW);
-            lcd.clear();
-            lcd.print("READY");
+            lcdPrintReset();
         }
     }
 }
