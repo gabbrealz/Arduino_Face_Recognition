@@ -4,83 +4,42 @@
 #include <ArduinoJson.h>
 #include <ArduinoWebsockets.h>
 
+// ===================================================================================
+// COMPONENT PINS ====================================================================
+
 #define BUTTON 2
 #define GREEN_LED 3
 #define RED_LED 4
 #define PIEZO 5
+
+// ===================================================================================
+// CONNECTION INFO ===================================================================
 
 char ssid[]           = "PLDTHOMEFIBRM764a";
 char password[]       = "AgotPerez@25";
 char server_host[]    = "192.168.1.168";
 uint16_t server_port  = 8000;
 
+// ===================================================================================
+// COMPONENTS & LOGIC VARIABLES ======================================================
+
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-using namespace websockets;
-WebsocketsClient wsClient;
+// ===================================================================================
+// HELPERS ===========================================================================
 
 void successTone() {
-  tone(PIEZO, 1200, 150);
-  delay(200);
-  tone(PIEZO, 1600, 200);
+    tone(PIEZO, 1200, 150);
+    delay(200);
+    tone(PIEZO, 1600, 200);
 }
 
 void errorTone() {
-  tone(PIEZO, 300, 400);
+    tone(PIEZO, 300, 400);
 }
 
-void onMessageCallback(WebsocketsMessage message) {
-  String response = message.data();
-  
-  if (response == "") {
-    digitalWrite(RED_LED, HIGH);
-
-    lcd.clear();
-    lcd.print("Camera Error");
-    errorTone();
-    delay(2000);
-
-    digitalWrite(RED_LED, LOW);
-    lcd.clear();
-    lcd.print("Ready");
-    return;
-  }
-  else {
-    StaticJsonDocument<2048> doc;
-    DeserializationError error = deserializeJson(doc, response);
-
-    if (!error) {
-      if (!doc.containsKey("detail") && doc.containsKey("student")) {
-          JsonObject student = doc["student"].as<JsonObject>();
-          const char* studentNumber = student["student_number"];
-          
-          digitalWrite(GREEN_LED, HIGH);
-
-          lcd.clear();
-          lcd.setCursor(0,0);
-          lcd.print("Welcome");
-
-          lcd.setCursor(0,1);
-          lcd.print(studentNumber);
-      }
-      else {
-          digitalWrite(RED_LED, HIGH);
-          lcd.clear();
-          lcd.setCursor(0,0);
-          lcd.print("Access Denied");
-
-          const char* detailMsg = doc.containsKey("detail") ? doc["detail"] : "Unknown Error";
-          lcd.setCursor(0,1);
-          lcd.print(detailMsg);
-
-          errorTone();
-          delay(3000);
-          digitalWrite(RED_LED, LOW);
-      }
-    }
-  }
-
-}
+// ===================================================================================
+// SETUP AND LOOP ====================================================================
 
 void setup() {
 
@@ -105,28 +64,16 @@ void setup() {
   }
   Serial.println("WiFi connected");
 
-  bool connected = wsClient.connect("ws://" + String(server_host) + ":" + String(server_port) + "/ws/microcontroller");
-  if (connected) {
-    Serial.println("WebSocket connected");
-    wsClient.send("STREAM"); // replace Serial1.print("STREAM")
-  } else {
-    Serial.println("WebSocket failed to connect");
-  }
-
   delay(2000);
 }
 
 void loop() {
-
-  wsClient.poll(); // important to keep websocket alive
 
   if (digitalRead(BUTTON) == LOW) {
 
     delay(50);
 
     if (digitalRead(BUTTON) == LOW) {
-
-      wsClient.send("!STREAM"); // replace Serial1.print("!STREAM")
       delay(20);
 
       lcd.clear();
