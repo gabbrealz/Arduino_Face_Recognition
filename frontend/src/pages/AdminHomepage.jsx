@@ -6,6 +6,8 @@ import { MdClose } from 'react-icons/md';
 export default function AdminHomepage() {
   const [activePopup, setActivePopup] = useState(null);
   const [logs, setLogs] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const socket = new WebSocket('ws://localhost:8080/attendance');
@@ -16,14 +18,7 @@ export default function AdminHomepage() {
     socket.onerror = (error) => console.error("WebSocket Error:", error);
     return () => socket.close();
   }, []);
-  
-  // New state variables for database connection
-  const [students, setStudents] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const closePopup = () => setActivePopup(null);
-
-  // Fetch data only when the "users" popup is opened
   useEffect(() => {
     if (activePopup === 'users') {
       fetchStudents();
@@ -34,13 +29,11 @@ export default function AdminHomepage() {
     setIsLoading(true);
     try {
       const response = await fetch('/api/students');
-      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
       const data = await response.json();
-      setStudents(data); // Save database rows to React state
+      setStudents(data);
     } catch (error) {
       console.error("Error fetching student list:", error);
     } finally {
@@ -48,24 +41,23 @@ export default function AdminHomepage() {
     }
   };
 
+  const closePopup = () => setActivePopup(null);
+
   return (
     <div className="admin_homepage">
       <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }}>Management</motion.h1>
 
       <div className="admin_container">
-        {/* Updated Icon: FaUsers */}
         <motion.button className="users" onClick={() => setActivePopup('users')} whileHover={{ y: -5 }}>
           <FaUsers size={24} />
           <span className="title">Students</span>
         </motion.button>
 
-        {/* Updated Icon: FaClipboardList */}
         <motion.button className="logs" onClick={() => setActivePopup('logs')} whileHover={{ y: -5 }}>
           <FaClipboardList size={24} />
           <span className="title"> Attendance Logs</span>
         </motion.button>
 
-        {/* Updated Icon: FaUserPlus */}
         <button className="register">
           <FaUserPlus size={24} />
           <span className="title">Register Students</span>
@@ -84,7 +76,6 @@ export default function AdminHomepage() {
             >
               <div className="popup_header">
                 <h2>{activePopup === 'users' ? 'User Directory' : 'Attendance Logs'}</h2>
-                {/* Updated Icon: MdClose */}
                 <button onClick={closePopup} className="close_btn"><MdClose size={24} /></button>
               </div>
 
@@ -96,7 +87,6 @@ export default function AdminHomepage() {
                         <tr>
                           <th>Student Number</th>
                           <th>Name</th>
-                          {/* Removed Section to match your DB schema */}
                           <th>Student Email</th>
                         </tr>
                       </thead>
@@ -104,7 +94,6 @@ export default function AdminHomepage() {
                         {isLoading ? (
                           <tr><td colSpan="3" style={{ textAlign: 'center' }}>Loading students...</td></tr>
                         ) : students.length > 0 ? (
-                          // Dynamically map over the data fetched from PostgreSQL
                           students.map((student) => (
                             <tr key={student.id}>
                               <td>{student.student_number}</td>
