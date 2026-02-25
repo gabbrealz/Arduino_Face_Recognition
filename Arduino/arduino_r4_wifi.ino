@@ -84,9 +84,9 @@ void errorTone() {
 
 void lcdPrintReset() {
     lcd.clear();
-    lcd.print("Attendance");
+    lcd.print("   Attendance");
     lcd.setCursor(0,1);
-    lcd.print("System Ready");
+    lcd.print("  System Ready");
 }
 
 void lcdClearRow(byte row) {
@@ -217,10 +217,7 @@ void setup() {
 
     lcd.init();
     lcd.backlight();
-    lcd.setCursor(0,0);
-    lcd.print("Attendance");
-    lcd.setCursor(0,1);
-    lcd.print("System Ready");
+    lcdPrintReset();
     
     connectWiFi();
     
