@@ -86,6 +86,7 @@ export default function App() {
         const data = JSON.parse(messageStr);
         setIsLoading(false);
         setRecognitionResult(data);
+        setShowPopup(true);
       }
     });
 
@@ -96,13 +97,20 @@ export default function App() {
     };
   }, []);
 
-  const handleClose = () => {
+  useEffect(() => {
+    if (isLoading && streamImage) {
+      setCapturedImage(streamImage);
+    }
+  }, [streamImage, isLoading]);
+
+
+  const handleClose = useCallback(() => {
     setShowPopup(false);
     setTimeout(() => {
       setCapturedImage(null);
       setRecognitionResult(null);
     }, 100);
-  };
+  }, []);
 
   return (
     <BrowserRouter>
