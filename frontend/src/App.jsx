@@ -5,6 +5,7 @@ import CameraApp from "./components/CameraApp";
 import PopupOverlay from "./components/PopupOverlay";
 import AdminHomepage from "./pages/AdminHomepage";
 import './App.css';
+
 export default function App() {
   const [capturedImage, setCapturedImage] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
@@ -13,8 +14,8 @@ export default function App() {
   const [recognitionResult, setRecognitionResult] = useState(null);
 
   const wsRef = useRef(null);
+  const mqttRef = useRef(null);
 
-  // 🔌 Initialize WebSocket
   useEffect(() => {
     const socket = new WebSocket("ws://192.168.1.168:8000/ws");
     socket.binaryType = "arraybuffer";
@@ -25,6 +26,8 @@ export default function App() {
 
     socket.onmessage = (event) => {
       if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {
+        if (isLoading) return;
+        
         const blob = event.data instanceof Blob ? event.data : new Blob([event.data], { type: "image/jpeg" });
 
         const imageUrl = URL.createObjectURL(blob);
@@ -32,7 +35,6 @@ export default function App() {
           if (prev) URL.revokeObjectURL(prev); 
           return imageUrl;
         });
-
       }
       else {
         console.log("Text message:", event.data);
@@ -50,38 +52,39 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const mqttClient = mqtt.connect("mqtt://ikaw na bahala gabb");
+    const mqttClient = mqtt.connect("ws://192.168.1.168:9001");
     
     mqttClient.on("connect", () => {
       console.log("MQTT connected");
-      mqttClient.subscribe("ikaw na bahala gabb");
+
+      mqttClient.subscribe("arduino-r4/output", { qos: 1 }, (err) => {
+        if (err) console.error("Subscribe error:", err);
+      });
+
+      mqttClient.subscribe("frontend/attendance-log/response", { qos: 1 }, (err) => {
+        if (err) console.error("Subscribe error:", err);
+      });
+
     });
 
     mqttClient.on("message", (topic, message) => {
-      const payload = message.toString();
-      console.log('MQTT Received: [${topic}]:', payload);
-      setRecognitionResult(payload);
-
-      setIsLoading(false);
-      setShowPopup(true);
+      if (topic === "arduino-r4/output") {
+        setCapturedImage(streamImage);
+        setIsLoading(true);
+      }
+      else if (topic === "frontend/attendance-log/response") {
+        data = JSON.parse(message);
+        setIsLoading(false);
+        setRecognitionResult(data);
+      }
     });
+
+    mqttRef.current = mqttClient;
 
     return () => {
       if (mqttClient) mqttClient.end();
     };
   }, []);
-
-  // 📸 Capture current frame
-  const handleCapture = useCallback(() => {
-    if (isLoading || !streamImage) return;
-
-    setCapturedImage(streamImage);
-<<<<<<< HEAD
-      
-=======
-    setIsLoading(true);
->>>>>>> ca4031587ef27b7624d75015f11b81d47c445745
-  }, [isLoading, streamImage]);
 
   const handleClose = () => {
     setShowPopup(false);
