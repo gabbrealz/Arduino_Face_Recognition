@@ -1,14 +1,17 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useLocation, BrowserRouter, Routes, Route } from "react-router-dom";
+import { useState, useEffect, useRef, useCallback, useContext } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import mqtt from "mqtt";
+import Notifications from "./components/Notifications";
 import CameraApp from "./components/CameraApp";
 import PopupOverlay from "./components/PopupOverlay";
 import AdminHomepage from "./pages/AdminHomepage";
+import { NotifContext, RegistrationContext } from "./Contexts";
 import './App.css';
 
 export default function App() {
-  const location = useLocation();
-  const { forRegistration, studentNumber } = location.state || { forRegistration: false };
+  const { addToNotifs } = useContext(NotifContext);
+  const { registrationData } = useContext(RegistrationContext);
+  const { forRegistration, studentNumber } = registrationData;
   
   const [capturedImage, setCapturedImage] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
@@ -86,7 +89,10 @@ export default function App() {
         throw new Error(errorData.detail || "Failed to register face");
       }
 
-      // todo: show notification
+      addToNotifs({
+        bgColor: "#008000",
+        message: "Successfully registered student!"
+      })
     }
     catch (error) {
       console.error(error);
@@ -173,6 +179,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <Notifications/>
       <div className="app-layout">
         <main className="main-viewport">
           {isLoading && (

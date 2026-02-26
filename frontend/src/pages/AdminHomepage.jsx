@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaUsers, FaClipboardList, FaUserPlus } from 'react-icons/fa';
 import { MdClose } from 'react-icons/md';
+import { RegistrationContext } from '../Contexts';
 
 function getDateString(timestampStr) {
   const date = new Date(timestampStr);
@@ -16,6 +17,7 @@ function getTimeString(timestampStr) {
 
 export default function AdminHomepage() {
   const navigate = useNavigate();
+  const { setRegistrationData } = useContext(RegistrationContext);
   const [activePopup, setActivePopup] = useState(null);
   const [logs, setLogs] = useState([]);
   const [students, setStudents] = useState([]);
@@ -82,10 +84,11 @@ export default function AdminHomepage() {
 
       if (response.ok) {
         closePopup();
-        navigate("/", { state: {
+        setRegistrationData({
           forRegistration: true,
           studentNumber: data.student_number
-        } });
+        });
+        navigate("/");
       }
 
     }
