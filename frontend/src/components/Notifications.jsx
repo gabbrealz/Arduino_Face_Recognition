@@ -36,7 +36,7 @@ function Notification({ notif, index }) {
       style={{
         transform: `translateX(-50%) translateY(${index * 6}px) scaleX(${1 - index * 0.05})`,
         zIndex: 200 - index,
-        backgroundColor: bgColor
+        backgroundColor: notif.bgColor
       }}
     >
       <div className="notif-message">{notif.message}</div>

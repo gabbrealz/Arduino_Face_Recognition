@@ -84,4 +84,4 @@ async def register_face(student_number: str, request: Request):
         logger.info(f"Register face for: {student_number} [NO IMAGE DATA]")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image data is required")
     
-    return await register_face(student_number, img_bytes)
+    return await register_face_logic(student_number, img_bytes)

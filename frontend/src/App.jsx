@@ -11,7 +11,6 @@ import './App.css';
 export default function App() {
   const { addToNotifs } = useContext(NotifContext);
   const { registrationData } = useContext(RegistrationContext);
-  const { forRegistration, studentNumber } = registrationData;
   
   const [capturedImage, setCapturedImage] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
@@ -23,10 +22,17 @@ export default function App() {
   const mqttRef = useRef(null);
 
   const isLoadingRef = useRef(isLoading);
+  const registrationDataRef = useRef(registrationData);
+  const streamImageRef = useRef(streamImage);
 
   useEffect(() => {
     isLoadingRef.current = isLoading;
   }, [isLoading]);
+
+  useEffect(() => {
+    registrationDataRef.current = registrationData;
+  }, [registrationData]);
+
 
   useEffect(() => {
     const socket = new WebSocket("ws://192.168.1.168:8000/camera");
@@ -38,11 +44,12 @@ export default function App() {
 
     socket.onmessage = (event) => {
       if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {
-        if (isLoading) return;
+        if (isLoadingRef.current) return;
         
         const blob = event.data instanceof Blob ? event.data : new Blob([event.data], { type: "image/jpeg" });
 
         const imageUrl = URL.createObjectURL(blob);
+        streamImageRef.current = imageUrl;
         setStreamImage((prev) => {
           if (prev) URL.revokeObjectURL(prev); 
           return imageUrl;
@@ -65,18 +72,13 @@ export default function App() {
 
 
   const registerFace = async () => {
-    if (!streamImage) {
-      console.error("No image available to register.");
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      const responseFromUrl = await fetch(streamImage);
+      const responseFromUrl = await fetch(streamImageRef.current);
       const imageBlob = await responseFromUrl.blob();
 
-      const response = fetch(`http://localhost:8000/${studentNumber}/register-face`, {
+      const response = await fetch(`http://localhost:8000/students/${registrationDataRef.current.studentNumber}/register-face`, {
         method: "POST",
         headers: {
           "Content-Type": "image/jpeg",
@@ -124,7 +126,7 @@ export default function App() {
         if (err) console.error("Subscribe error:", err);
       });
 
-      if (forRegistration) {
+      if (registrationDataRef.current.forRegistration) {
         mqttClient.publish("fastapi/capture/mode", "RGSTR", { qos: 2 }, (err) => {
           if (err) console.error("Publish error:", err);
         });
@@ -145,7 +147,8 @@ export default function App() {
         setCapturedImage(streamImage);
         setIsLoading(true);
 
-        if (forRegistration) registerFace();
+        if (registrationDataRef.current.forRegistration)
+          registerFace();
       }
       else if (topic === "frontend/attendance-log/response") {
         const data = JSON.parse(messageStr);

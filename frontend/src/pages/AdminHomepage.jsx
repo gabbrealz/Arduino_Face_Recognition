@@ -72,7 +72,7 @@ export default function AdminHomepage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/students/register', {
+      const response = await fetch('http://localhost:8000/students', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -150,7 +150,7 @@ export default function AdminHomepage() {
                         required 
                         value={formData.fullName}
                         onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                        placeholder="John Doe"
+                        placeholder="Student Name"
                       />
                     </div>
                     <div className="form_group">
@@ -160,7 +160,7 @@ export default function AdminHomepage() {
                         required 
                         value={formData.studentEmail}
                         onChange={(e) => setFormData({...formData, studentEmail: e.target.value})}
-                        placeholder="john@university.edu"
+                        placeholder="Student Email"
                       />
                     </div>
                     <button type="submit" className="submit_btn" disabled={isLoading}>

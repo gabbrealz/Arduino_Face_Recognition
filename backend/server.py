@@ -68,8 +68,9 @@ def on_connect(client, flags, rc, properties):
 
 def on_message(client, topic, payload, qos, properties):
     logger.info(f"Received on {topic}")
+    payload_str = payload.decode("utf-8")
 
-    if topic == "arduino-r4/output" and payload == "CLICK":
+    if topic == "arduino-r4/output" and payload_str == "CLICK":
         logger.info("Received message from 'arduino-r4/output'")
 
         app = client._appdata.get("app")
@@ -81,10 +82,10 @@ def on_message(client, topic, payload, qos, properties):
         asyncio.create_task(run_activity(client, img_bytes))
 
     elif topic == "fastapi/capture/mode":
-        logger.info("Received message from 'fastapi/capture/mode'")
+        logger.info(f"Received message from 'fastapi/capture/mode': {payload_str}")
 
         app = client._appdata.get("app")
-        app.state.mode = payload
+        app.state.mode = payload_str
 
 
 def on_disconnect(client, packet, exc=None):
