@@ -14,8 +14,8 @@
 // ===================================================================================
 // CONNECTION INFO ===================================================================
 
-char ssid[]             = "PLDTHOMEFIBRM764a";
-char password[]         = "AgotPerez@25";
+char ssid[]             = "WIFI_NAME";
+char password[]         = "WIFI_PASSWORD";
 char mqttServer[]       = "192.168.1.168";
 uint16_t mqttPort       = 1883;
 
