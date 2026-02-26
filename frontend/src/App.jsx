@@ -10,7 +10,7 @@ import './App.css';
 
 export default function App() {
   const { addToNotifs } = useContext(NotifContext);
-  const { registrationData } = useContext(RegistrationContext);
+  const { registrationData, setRegistrationData } = useContext(RegistrationContext);
   
   const [capturedImage, setCapturedImage] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
@@ -95,9 +95,25 @@ export default function App() {
         bgColor: "#008000",
         message: "Successfully registered student!"
       })
+      setRegistrationData({ forRegistration: false });
+
+      mqttRef.current.publish("arduino-r4/input", JSON.stringify({
+        req: "RGSTR",
+        msg: "Student added!",
+        success: true,
+      }), { qos: 2 }, (err) => { if (err) console.error("Publish error:", err); });
     }
     catch (error) {
       console.error(error);
+      addToNotifs({
+        bgColor: "#5c0f0f",
+        message: error
+      });
+      mqttRef.current.publish("arduino-r4/input", JSON.stringify({
+        req: "RGSTR",
+        msg: "Failed to add!",
+        success: false,
+      }), { qos: 2 }, (err) => { if (err) console.error("Publish error:", err); });
     }
     finally {
       setIsLoading(false);
@@ -193,7 +209,7 @@ export default function App() {
           )}
 
           <Routes>
-            <Route path="/" element={<CameraApp streamImage={streamImage} />} />
+            <Route path="/" element={<CameraApp streamImage={streamImage} header={registrationData.forRegistration} />} />
             <Route path="/admin" element={<AdminHomepage />} />
           </Routes>
         </main>

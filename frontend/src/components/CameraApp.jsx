@@ -1,6 +1,9 @@
-export default function CameraApp({ streamImage }) {
+export default function CameraApp({ streamImage, forRegistration }) {
   return (
     <div className="camera-app">
+      <h2 style={{ margin: "16px 36px" }}>
+        {forRegistration ? "Register Student" : "Log Attendance"}
+      </h2>
       <div className="viewfinder">
         {streamImage ? (
           <img 

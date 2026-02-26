@@ -76,12 +76,14 @@ async def create_student(request: Request, req_body: CreateStudentRequestBody):
 
 @router.post("/{student_number}/register-face", status_code=status.HTTP_201_CREATED)
 async def register_face(student_number: str, request: Request):
-    request.app.state.mode = "ATTND"
-
+    request.app.state.mode = "RGSTR"
     img_bytes = await request.body()
 
     if not img_bytes:
         logger.info(f"Register face for: {student_number} [NO IMAGE DATA]")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image data is required")
     
-    return await register_face_logic(student_number, img_bytes)
+    response = await register_face_logic(student_number, img_bytes)
+
+    request.app.state.mode = "ATTND"    
+    return response
