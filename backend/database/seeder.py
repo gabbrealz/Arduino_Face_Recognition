@@ -18,6 +18,8 @@ if __name__ == "__main__":
 
     embedding1 = DeepFace.represent(test_images_directory/"gabb1.jpg", model_name="ArcFace")[0]["embedding"]
     embedding2 = DeepFace.represent(test_images_directory/"june.jpg", model_name="ArcFace")[0]["embedding"]
+    embedding2 = DeepFace.represent(test_images_directory/"roycee.jpg", model_name="ArcFace")[0]["embedding"]
 
     DB.register_face(students[0], embedding1)
     DB.register_face(students[1], embedding2)
+    DB.register_face(students[2], embedding2)
