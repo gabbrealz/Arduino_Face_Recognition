@@ -343,14 +343,6 @@
         position: relative;
       }
 
-<<<<<<< HEAD
-      .popup_header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 30px;
-      }
-=======
 /* Modal Box */
 .popup_content {
   background: #ffffff;
@@ -359,7 +351,6 @@
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.12);
   position: relative;
 }
->>>>>>> cc1881c0db5f039155b7bb6e173db563e8925913
 
       .popup_header h2 {
         font-size: 24px;
@@ -404,16 +395,6 @@
         gap: 90px;
       }
 
-<<<<<<< HEAD
-      .popup_table td {
-        text-align: center;
-        padding: 16px 8px;
-        border-bottom: 1px solid #f9f9f9;
-        font-size: 14px;
-        color: #333;
-        gap: 90px;
-      }
-=======
 .popup_table th {
   text-align: center;
   padding: 12px 8px;
@@ -432,4 +413,3 @@
   color: #333;
   gap: 90px;
 }
->>>>>>> cc1881c0db5f039155b7bb6e173db563e8925913
