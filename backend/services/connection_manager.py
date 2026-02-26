@@ -53,4 +53,3 @@ class ConnectionManager:
             
 
 stream_manager = ConnectionManager()
-event_manager = ConnectionManager()

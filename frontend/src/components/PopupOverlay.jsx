@@ -1,20 +1,18 @@
 import { useEffect } from "react";
 import AttendanceCard from "./AttendanceCard";
 
-export default function PopupOverlay({ image, onClose }) {
+export default function PopupOverlay({ image, result, onClose }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
-    }, 3000);
+    }, 5000);
 
     return () => {
       clearTimeout(timer);
     };
-  }, [onClose]);
+  }, []);
 
-  const safeResult = result ? result.trim() : "";
-  const isError = safeResult === "no student detected" || safeResult === "invalid image";
-
+  
   return (
     <div
       className="popup-overlay"
@@ -24,7 +22,7 @@ export default function PopupOverlay({ image, onClose }) {
         }
       }}
     >
-      {isError ? (
+      {!result.success ? (
         <div
           className="error-card"
           style={{
@@ -40,13 +38,11 @@ export default function PopupOverlay({ image, onClose }) {
         >
           <h2 style={{ margin: '0 0 10px 0' }}>Recognition Failed</h2>
           <p style={{ fontSize: '16px', color: '#333' }}>
-            {safeResult === "no student detected"
-              ? "No student detected in the image."
-            : "Invalid image. Please try again."}
+            {result.msg}
           </p>
         </div>
       ) : (
-        <AttendanceCard image={image} studentData={safeResult} />
+        <AttendanceCard image={image} studentName={result.student.full_name} />
       )}
       </div>
   );

@@ -49,9 +49,13 @@ class DB:
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO public.students (full_name, student_email) VALUES (%s, %s)",
+                    "INSERT INTO public.students (full_name, student_email) VALUES (%s, %s) RETURNING student_number",
                     (full_name, student_email))
+                
+                new_student_number = cur.fetchone()["student_number"]
+
             conn.commit()
+        return new_student_number
     
 
     @staticmethod

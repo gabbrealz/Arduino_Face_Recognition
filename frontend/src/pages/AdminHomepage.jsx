@@ -3,43 +3,68 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaUsers, FaClipboardList, FaUserPlus } from 'react-icons/fa';
 import { MdClose } from 'react-icons/md';
 
+
+function getDateString(timestampStr) {
+  const date = new Date(timestampStr);
+  return date.toISOString().split('T')[0];
+}
+
+function getTimeString(timestampStr) {
+  const date = new Date(timestampStr);
+  return date.toISOString().split('T')[1].split('.')[0];
+}
+
+
 export default function AdminHomepage() {
   const [activePopup, setActivePopup] = useState(null);
   const [logs, setLogs] = useState([]);
   const [students, setStudents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8080/attendance');
-    socket.onmessage = (event) => {
-      const newData = JSON.parse(event.data);
-      setLogs((prevLogs) => [newData, ...prevLogs]);
-    };
-    socket.onerror = (error) => console.error("WebSocket Error:", error);
-    return () => socket.close();
-  }, []);
-
-  useEffect(() => {
-    if (activePopup === 'users') {
-      fetchStudents();
+  const fetchLogs = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:8000/attendance');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setLogs(data);
     }
-  }, [activePopup]);
+    catch (error) {
+      console.error("Error fetching student list:", error);
+    }
+    finally {
+      setIsLoading(false);
+    }
+  };
 
   const fetchStudents = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/students');
+      const response = await fetch('http://localhost:8000/students');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
       setStudents(data);
-    } catch (error) {
+    }
+    catch (error) {
       console.error("Error fetching student list:", error);
-    } finally {
+    }
+    finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (activePopup === 'users') {
+      fetchStudents();
+    }
+    else if (activePopup === 'logs') {
+      fetchLogs();
+    }
+  }, [activePopup]);
 
   const closePopup = () => setActivePopup(null);
 
@@ -110,10 +135,11 @@ export default function AdminHomepage() {
                     <>
                       <thead>
                         <tr>
-                          <th>Name</th>
-                          <th>Student Number</th>
-                          <th>Attendance Time</th>
                           <th>Date</th>
+                          <th>Time</th>
+                          <th>Student Number</th>
+                          <th>Student Email</th>
+                          <th>Full Name</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -125,10 +151,11 @@ export default function AdminHomepage() {
                               animate={{ backgroundColor: "transparent" }}
                               transition={{ duration: 2 }}
                             >
-                              <td>{log.name}</td>
-                              <td>{log.studentNumber}</td>
-                              <td>{log.time}</td>
-                              <td>{log.date}</td>
+                              <td>{getDateString(log.created_at)}</td>
+                              <td>{getTimeString(log.created_at)}</td>
+                              <td>{log.student_number}</td>
+                              <td>{log.student_email}</td>
+                              <td>{log.full_name}</td>
                             </motion.tr>
                           ))
                         ) : (

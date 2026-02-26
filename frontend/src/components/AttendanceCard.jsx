@@ -1,6 +1,4 @@
-export default function AttendanceCard({ image, studentData }) {
-  const displayName = studentData || "Student";
-
+export default function AttendanceCard({ image, studentName }) {
   return (
     <div className="attendance-card">
       <div className="image-container">
@@ -12,7 +10,7 @@ export default function AttendanceCard({ image, studentData }) {
       </div>
 
       <div className="card-info">
-        <div className="card-title">{displayName}</div>
+        <div className="card-title">{studentName || "Student"}</div>
 
         <div className="creator-row">
           <div className="creator-icon">S</div>
