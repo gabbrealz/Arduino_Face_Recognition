@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useLocation, BrowserRouter, Routes, Route } from "react-router-dom";
 import mqtt from "mqtt";
 import CameraApp from "./components/CameraApp";
 import PopupOverlay from "./components/PopupOverlay";
@@ -7,6 +7,9 @@ import AdminHomepage from "./pages/AdminHomepage";
 import './App.css';
 
 export default function App() {
+  const location = useLocation();
+  const { forRegistration, studentNumber } = location.state || { forRegistration: false };
+  
   const [capturedImage, setCapturedImage] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,8 +61,51 @@ export default function App() {
   }, []);
 
 
+  const registerFace = async () => {
+    if (!streamImage) {
+      console.error("No image available to register.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const responseFromUrl = await fetch(streamImage);
+      const imageBlob = await responseFromUrl.blob();
+
+      const response = fetch(`http://localhost:8000/${studentNumber}/register-face`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "image/jpeg",
+        },
+        body: imageBlob
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to register face");
+      }
+
+      // todo: show notification
+    }
+    catch (error) {
+      console.error(error);
+    }
+    finally {
+      setIsLoading(false);
+    }
+  };
+
+
   useEffect(() => {
-    const mqttClient = mqtt.connect("ws://192.168.1.168:9001");
+    const mqttClient = mqtt.connect("ws://192.168.1.168:9001", {
+      clientId: "vite-frontend",
+      will: {
+        topic: "fastapi/capture/mode",
+        payload: "ATTND",
+        qos: 2
+      }
+    });
     
     mqttClient.on("connect", () => {
       console.log("MQTT connected");
@@ -72,6 +118,17 @@ export default function App() {
         if (err) console.error("Subscribe error:", err);
       });
 
+      if (forRegistration) {
+        mqttClient.publish("fastapi/capture/mode", "RGSTR", { qos: 2 }, (err) => {
+          if (err) console.error("Publish error:", err);
+        });
+      }
+      else {
+        mqttClient.publish("fastapi/capture/mode", "ATTND", { qos: 2 }, (err) => {
+          if (err) console.error("Publish error:", err);
+        });
+      }
+
     });
 
     mqttClient.on("message", (topic, message) => {
@@ -81,6 +138,8 @@ export default function App() {
       if (topic === "arduino-r4/output") {
         setCapturedImage(streamImage);
         setIsLoading(true);
+
+        if (forRegistration) registerFace();
       }
       else if (topic === "frontend/attendance-log/response") {
         const data = JSON.parse(messageStr);

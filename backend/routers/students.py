@@ -59,9 +59,11 @@ async def get_students():
 
 
 @router.post("")
-async def create_student(req_body: CreateStudentRequestBody):
+async def create_student(request: Request, req_body: CreateStudentRequestBody):
+    request.app.state.mode = "RGSTR"
+
     try:
-        DB.insert_student(req_body.name, req_body.email)
+        new_student_number = DB.insert_student(req_body.name, req_body.email)
     except UniqueViolation as err:
         logger.info(f"Create student w/ email: {req_body.email} [UNIQUE CONSTRAINT VIOLATED]")
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Student number or email already exists")
@@ -69,11 +71,13 @@ async def create_student(req_body: CreateStudentRequestBody):
         logger.exception(f"Create student w/ email: {req_body.email} [DATABASE ERROR]")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="Internal database error")
     
-    return {"message": "Student registered successfully"}
+    return {"message": "Student registered successfully", "student_number": new_student_number}
 
 
 @router.post("/{student_number}/register-face", status_code=status.HTTP_201_CREATED)
 async def register_face(student_number: str, request: Request):
+    request.app.state.mode = "ATTND"
+
     img_bytes = await request.body()
 
     if not img_bytes:

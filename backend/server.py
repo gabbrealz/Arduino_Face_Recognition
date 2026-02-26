@@ -69,17 +69,22 @@ def on_connect(client, flags, rc, properties):
 def on_message(client, topic, payload, qos, properties):
     logger.info(f"Received on {topic}")
 
-    if topic != "arduino-r4/output" and payload != "CLICK": return
-    logger.info("Received message from 'arduino-r4/output'")
+    if topic == "arduino-r4/output" and payload == "CLICK":
+        logger.info("Received message from 'arduino-r4/output'")
 
-    app = client._appdata.get("app")
+        app = client._appdata.get("app")
+        mode = app.state.mode
+        img_bytes = app.state.img
 
-    mode = app.state.mode
-    img_bytes = app.state.img
+        if mode != "ATTND" or img_bytes is None: return
 
-    if mode != "ATTND" or img_bytes is None: return
+        asyncio.create_task(run_activity(client, img_bytes))
 
-    asyncio.create_task(run_activity(client, img_bytes))
+    elif topic == "fastapi/capture/mode":
+        logger.info("Received message from 'fastapi/capture/mode'")
+
+        app = client._appdata.get("app")
+        app.state.mode = payload
 
 
 def on_disconnect(client, packet, exc=None):
@@ -120,6 +125,7 @@ async def lifespan(app: FastAPI):
             await asyncio.sleep(2)
         else:
             client.subscribe("arduino-r4/output", qos=2)
+            client.subscribe("fastapi/capture/mode", qos=2)
             app.state.mqtt_client = client
             break
     else:

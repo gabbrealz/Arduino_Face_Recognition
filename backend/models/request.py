@@ -17,6 +17,6 @@ class CreateStudentRequestBody(BaseModel):
     @field_validator("name")
     @classmethod
     def validate_name(cls, value):
-        if re.match(r'^[a-zA-Z]+(\s[a-zA-Z]+)*$', value):
+        if re.match(r'^[a-zA-Z.]+(\s[a-zA-Z.]+)*$', value):
             return value
         raise ValueError("Student name is invalid")
