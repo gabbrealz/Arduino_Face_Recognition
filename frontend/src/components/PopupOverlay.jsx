@@ -10,7 +10,9 @@ export default function PopupOverlay({ image, result, onClose }) {
     return () => {
       clearTimeout(timer);
     };
-  }, []);
+  }, [onClose]);
+
+  if (!result) return null;
 
   
   return (
