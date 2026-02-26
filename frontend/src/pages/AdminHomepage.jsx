@@ -45,7 +45,7 @@ export default function AdminHomepage() {
 
   return (
     <div className="admin_homepage">
-      <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }}>Management</motion.h1>
+      <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }}>Admin Management</motion.h1>
 
       <div className="admin_container">
         <motion.button className="users" onClick={() => setActivePopup('users')} whileHover={{ y: -5 }}>
