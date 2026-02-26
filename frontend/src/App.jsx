@@ -106,8 +106,8 @@ export default function App() {
     catch (error) {
       console.error(error);
       addToNotifs({
-        bgColor: "#5c0f0f",
-        message: error
+        bgColor: "#992020",
+        message: error.message
       });
       mqttRef.current.publish("arduino-r4/input", JSON.stringify({
         req: "RGSTR",
@@ -209,7 +209,7 @@ export default function App() {
           )}
 
           <Routes>
-            <Route path="/" element={<CameraApp streamImage={streamImage} header={registrationData.forRegistration} />} />
+            <Route path="/" element={<CameraApp streamImage={streamImage} forRegistration={registrationDataRef.current.forRegistration} />} />
             <Route path="/admin" element={<AdminHomepage />} />
           </Routes>
         </main>
