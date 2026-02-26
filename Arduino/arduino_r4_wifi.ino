@@ -187,7 +187,7 @@ void mqttCallback(String &topic, String &payload) {
             lcdPrintSuccess(msg);
             digitalWrite(GREEN_LED, HIGH);
             successTone();
-            nonBlockingDelay(2000);
+            nonBlockingDelay(5000);
 
             digitalWrite(GREEN_LED, LOW);
             lcdPrintReset();
@@ -196,7 +196,7 @@ void mqttCallback(String &topic, String &payload) {
             lcdPrintError(msg);
             digitalWrite(RED_LED, HIGH);
             errorTone();
-            nonBlockingDelay(2000);
+            nonBlockingDelay(5000);
 
             digitalWrite(RED_LED, LOW);
             lcdPrintReset();
