@@ -1,16 +1,16 @@
 services:
-  # app:
-  #   build:
-  #     context: .
-  #     dockerfile: frontend.dockerfile
-  #   image: marcusan-app-img
-  #   container_name: marcusan-app
-  #   ports:
-  #     - "80:80"
-  #   network:
-  #     - marcusan_network
-  #   depends_on:
-  #     - server
+  app:
+    build:
+      context: .
+      dockerfile: frontend.dockerfile
+    image: marcusan-app-img
+    container_name: marcusan-app
+    ports:
+      - "80:80"
+    network:
+      - marcusan_network
+    depends_on:
+      - server
 
   server:
     build:
