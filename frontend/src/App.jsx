@@ -35,7 +35,7 @@ export default function App() {
 
 
   useEffect(() => {
-    const socket = new WebSocket("ws://192.168.1.168:8000/camera");
+    const socket = new WebSocket("ws://10.139.37.34:8000/camera");
     socket.binaryType = "arraybuffer";
 
     socket.onopen = () => {
@@ -122,7 +122,7 @@ export default function App() {
 
 
   useEffect(() => {
-    const mqttClient = mqtt.connect("ws://192.168.1.168:9001", {
+    const mqttClient = mqtt.connect("ws://10.139.37.34:9001", {
       clientId: "vite-frontend",
       will: {
         topic: "fastapi/capture/mode",

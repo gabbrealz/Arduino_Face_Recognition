@@ -34,8 +34,8 @@ using namespace websockets;
 // ===================================================================================
 // CONNECTION INFO ===================================================================
 
-const char* ssid            = "PLDTHOMEFIBRM764a";
-const char* password        = "AgotPerez@25";
+const char* ssid            = "WIFI_NAME";
+const char* password        = "WIFI_PASSWORD";
 const char* serverHost      = "192.168.1.168";
 const uint16_t serverPort   = 8000;
 
