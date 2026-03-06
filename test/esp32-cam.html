@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Camera WebSocket Stream</title>
+
+<style>
+body{
+    font-family: Arial;
+    text-align:center;
+    background:#f4f4f4;
+}
+
+video{
+    border:2px solid black;
+}
+
+.status{
+    margin-top:10px;
+    font-size:18px;
+    font-weight:bold;
+}
+
+.connected{ color:green; }
+.disconnected{ color:red; }
+.sending{ color:blue; }
+
+button{
+    margin:10px;
+    padding:10px 20px;
+    font-size:16px;
+}
+</style>
+
+</head>
+<body>
+
+<h2>Camera WebSocket Stream</h2>
+
+<video id="video" width="480" height="360" autoplay></video>
+
+<canvas id="canvas" width="480" height="360" style="display:none"></canvas>
+
+<div class="status">
+Connection: <span id="connectionStatus" class="disconnected">Disconnected</span>
+</div>
+
+<div class="status">
+Sending: <span id="sendingStatus">Stopped</span>
+</div>
+
+<br>
+
+<button onclick="startStream()">Start</button>
+<button onclick="stopStream()">Stop</button>
+
+<script>
+
+const video = document.getElementById("video")
+const canvas = document.getElementById("canvas")
+const ctx = canvas.getContext("2d")
+
+const connectionStatus = document.getElementById("connectionStatus")
+const sendingStatus = document.getElementById("sendingStatus")
+
+let ws
+let interval
+
+navigator.mediaDevices.getUserMedia({video:true})
+.then(stream=>{
+    video.srcObject = stream
+})
+.catch(err=>{
+    console.error(err)
+})
+
+function startStream(){
+
+    ws = new WebSocket("ws://localhost:8000/camera")
+
+    ws.onopen = ()=>{
+        connectionStatus.textContent = "Connected"
+        connectionStatus.className = "connected"
+
+        sendingStatus.textContent = "Sending"
+        sendingStatus.className = "sending"
+
+        interval = setInterval(sendFrame,200)
+    }
+
+    ws.onclose = ()=>{
+        connectionStatus.textContent = "Disconnected"
+        connectionStatus.className = "disconnected"
+
+        sendingStatus.textContent = "Stopped"
+        sendingStatus.className = ""
+    }
+
+}
+
+function sendFrame(){
+
+    const width = 320
+    const height = 240
+
+    canvas.width = width
+    canvas.height = height
+
+    ctx.save()
+
+    ctx.translate(canvas.width,0)
+    ctx.rotate(Math.PI/2)
+
+    ctx.drawImage(video,0,0,width,height)
+
+    ctx.restore()
+
+    canvas.toBlob((blob)=>{
+        if(ws.readyState === WebSocket.OPEN){
+            ws.send(blob)
+        }
+    },"image/jpeg",0.6)
+}
+
+function stopStream(){
+
+    clearInterval(interval)
+
+    sendingStatus.textContent = "Stopped"
+    sendingStatus.className = ""
+
+    if(ws){
+        ws.close()
+    }
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>WebSocket Camera Viewer</title>
+
+<style>
+body{
+    font-family:Arial;
+    text-align:center;
+    background:#f4f4f4;
+}
+
+img{
+    border:2px solid black;
+    margin-top:10px;
+    max-width:90%;
+}
+
+.status{
+    font-size:18px;
+    font-weight:bold;
+    margin:8px;
+}
+
+.connected{ color:green; }
+.disconnected{ color:red; }
+.receiving{ color:blue; }
+
+button{
+    padding:10px 20px;
+    font-size:16px;
+    margin-top:10px;
+}
+</style>
+
+</head>
+<body>
+
+<h2>Live Camera Feed</h2>
+
+<div class="status">
+Connection: <span id="connectionStatus" class="disconnected">Disconnected</span>
+</div>
+
+<div class="status">
+Receiving: <span id="receivingStatus">Stopped</span>
+</div>
+
+<button onclick="connect()">Connect</button>
+<button onclick="disconnect()">Disconnect</button>
+
+<br>
+
+<img id="stream" alt="Waiting for image...">
+
+<script>
+
+let ws
+
+const connectionStatus = document.getElementById("connectionStatus")
+const receivingStatus = document.getElementById("receivingStatus")
+const stream = document.getElementById("stream")
+
+function connect(){
+
+    ws = new WebSocket("ws://localhost:8000/camera")
+
+    ws.onopen = ()=>{
+        connectionStatus.textContent = "Connected"
+        connectionStatus.className = "connected"
+
+        receivingStatus.textContent = "Receiving"
+        receivingStatus.className = "receiving"
+    }
+
+    ws.onmessage = async (event)=>{
+        const blob = event.data
+        const url = URL.createObjectURL(blob)
+        stream.src = url
+    }
+
+    ws.onclose = ()=>{
+        connectionStatus.textContent = "Disconnected"
+        connectionStatus.className = "disconnected"
+
+        receivingStatus.textContent = "Stopped"
+        receivingStatus.className = ""
+    }
+
+}
+
+function disconnect(){
+    if(ws){
+        ws.close()
+    }
+}
+
+</script>
+
+</body>
+</html>
