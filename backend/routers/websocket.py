@@ -1,6 +1,8 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from services.connection_manager import stream_manager
 from services.log import logger
+from PIL import Image
+import io
 
 router = APIRouter()
 
@@ -17,8 +19,16 @@ async def streaming_endpoint(websocket: WebSocket):
             data = message.get("bytes")
             if data is not None:
                 # print("Received BYTES")
-                websocket.app.state.img = data
-                await stream_manager.broadcast_bytes(data, websocket)
+                
+                img = Image.open(io.BytesIO(data))
+                img = img.rotate(90, expand=True)
+
+                buffer = io.BytesIO()
+                img.save(buffer, format="JPEG")
+                rotated_bytes = buffer.getvalue()
+
+                websocket.app.state.img = rotated_bytes
+                await stream_manager.broadcast_bytes(rotated_bytes, websocket)
 
     except (WebSocketDisconnect, RuntimeError):
         logger.info("A websocket connection disconnected")
