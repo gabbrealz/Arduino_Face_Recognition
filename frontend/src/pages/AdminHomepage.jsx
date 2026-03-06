@@ -174,7 +174,7 @@ export default function AdminHomepage() {
     }
   };
 
-  handleDeleteLog = async (logId) => {
+  const handleDeleteLog = async (logId) => {
     if (!window.confirm("Are you sure you want to delete this log entry?")) return;
 
     try {
