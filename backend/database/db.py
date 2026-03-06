@@ -57,6 +57,14 @@ class DB:
             conn.commit()
         return new_student_number
     
+    @staticmethod
+    def update_student(student_id, full_name, student_email):
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE public.students SET full_name = %s, student_email = %s WHERE id = %s",
+                    (full_name, student_email, student_id))
+            conn.commit()
 
     @staticmethod
     def get_attendance_logs():

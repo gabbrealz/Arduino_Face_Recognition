@@ -12,3 +12,5 @@ class CreateStudentRequestBody(BaseModel):
         if re.match(r'^[a-zA-Z.]+(\s[a-zA-Z.]+)*$', value):
             return value
         raise ValueError("Student name is invalid")
+
+UpdateStudentRequestBody = CreateStudentRequestBody

@@ -7,7 +7,7 @@ from time import time
 from database.db import DB
 from services.log import logger
 from services.image import Image
-from models.request import CreateStudentRequestBody
+from models.request import CreateStudentRequestBody, UpdateStudentRequestBody
 
 router = APIRouter()
 
@@ -35,6 +35,19 @@ async def create_student(request: Request, req_body: CreateStudentRequestBody):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="Internal database error")
     
     return {"message": "Student registered successfully", "student_number": new_student_number}
+
+
+@router.put("")
+async def update_student(id: int, req_body: UpdateStudentRequestBody):
+    try:
+        DB.update_student(id, req_body.name, req_body.email)
+    except UniqueViolation as err:
+        logger.info(f"Update student w/ email: {req_body.email} [UNIQUE CONSTRAINT VIOLATED]")    
+    except DatabaseError as err:
+        logger.exception(f"Update student w/ email: {req_body.email} [DATABASE ERROR]")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="Internal database error")
+    
+    return {"message": "Student information updated successfully"}
 
 
 @router.post("/{student_number}/register-face", status_code=status.HTTP_201_CREATED)
