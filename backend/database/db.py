@@ -73,12 +73,13 @@ class DB:
                 cur.execute("DELETE FROM public.students WHERE id = %s", (student_id,))
             conn.commit()
 
+
     @staticmethod
     def get_attendance_logs():
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    SELECT l.created_at, s.student_number, s.full_name, s.student_email
+                    SELECT l.id, l.created_at, s.student_number, s.full_name, s.student_email
                     FROM public.attendance_logs l
                     JOIN public.students s ON l.student_id = s.id
                 """)
@@ -91,4 +92,11 @@ class DB:
                 cur.execute(
                     "INSERT INTO public.attendance_logs (student_id) VALUES (%s)",
                     (student_id,))
+            conn.commit()
+
+    @staticmethod
+    def delete_attendance_log(log_id):
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM public.attendance_logs WHERE id = %s", (log_id,))
             conn.commit()

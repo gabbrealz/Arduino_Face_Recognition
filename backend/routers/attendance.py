@@ -34,6 +34,17 @@ async def get_attendance_logs():
     return logs
 
 
+@router.delete("")
+async def delete_attendance_log(id: int):
+    try:
+        DB.delete_attendance_log(id)
+    except DatabaseError:
+        logger.exception("Delete attendance log [DATABASE ERROR]")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal database error")
+    
+    return {"message": "Attendance log deleted successfully"}
+
+
 @router.post("", status_code=status.HTTP_200_OK)
 async def log_student_attendance(request: Request):
     img_bytes = await request.body()
