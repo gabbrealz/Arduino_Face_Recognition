@@ -29,8 +29,8 @@ async def get_attendance_logs():
         )
 
     if not logs:
-        logger.info("Get all attendance logs [NO LOGS FOUND]")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No attendance logs found")
+        logger.info("Get all attendance logs [LOGS IS EMPTY]")
+
     return logs
 
 
