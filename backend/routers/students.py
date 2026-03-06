@@ -50,6 +50,17 @@ async def update_student(id: int, req_body: UpdateStudentRequestBody):
     return {"message": "Student information updated successfully"}
 
 
+@router.delete("")
+async def delete_student(id: int):
+    try:
+        DB.delete_student(id)
+    except DatabaseError as err:
+        logger.exception(f"Delete student [DATABASE ERROR]")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="Internal database error")
+    
+    return {"message": "Student deleted successfully"}
+
+
 @router.post("/{student_number}/register-face", status_code=status.HTTP_201_CREATED)
 async def register_face(student_number: str, request: Request):
     request.app.state.mode = "RGSTR"

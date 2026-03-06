@@ -67,6 +67,13 @@ class DB:
             conn.commit()
 
     @staticmethod
+    def delete_student(student_id):
+        with DB.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM public.students WHERE id = %s", (student_id,))
+            conn.commit()
+
+    @staticmethod
     def get_attendance_logs():
         with DB.pool.connection() as conn:
             with conn.cursor() as cur:
