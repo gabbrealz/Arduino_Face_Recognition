@@ -17,6 +17,7 @@ services:
       context: .
       dockerfile: backend.dockerfile
     image: marcusan-server-img
+    profiles: ["with-backend"]
     container_name: marcusan-server
     env_file:
       - ./backend/.env
