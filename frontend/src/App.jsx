@@ -35,7 +35,7 @@ export default function App() {
 
 
   useEffect(() => {
-    const socket = new WebSocket("ws://10.139.37.34:8000/camera");
+    const socket = new WebSocket("ws://192.168.1.206:8000/camera");
     socket.binaryType = "arraybuffer";
 
     socket.onopen = () => {
