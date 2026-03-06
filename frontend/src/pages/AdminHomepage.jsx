@@ -1,9 +1,10 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaUsers, FaClipboardList, FaUserPlus } from 'react-icons/fa';
+import { FaUsers, FaClipboardList, FaUserPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import { MdClose } from 'react-icons/md';
-import { RegistrationContext } from '../Contexts';
+import { RegistrationContext, NotifContext } from '../Contexts';
+import Notifications from '../components/Notifications';
 
 function getDateString(timestampStr) {
   const date = new Date(timestampStr);
@@ -16,6 +17,7 @@ function getTimeString(timestampStr) {
 }
 
 export default function AdminHomepage() {
+  const { addToNotifs } = useContext(NotifContext);
   const navigate = useNavigate();
   const { setRegistrationData } = useContext(RegistrationContext);
   const [activePopup, setActivePopup] = useState(null);
@@ -23,7 +25,7 @@ export default function AdminHomepage() {
   const [students, setStudents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  // New State for Register Form
+  const [editingStudentId, setEditingStudentId] = useState(null);
   const [formData, setFormData] = useState({ fullName: '', studentEmail: '' });
 
   const fetchLogs = async () => {
@@ -64,6 +66,7 @@ export default function AdminHomepage() {
 
   const closePopup = () => {
     setActivePopup(null);
+    setEditingStudentId(null);
     setFormData({ fullName: '', studentEmail: '' }); // Reset form on close
   };
 
@@ -97,6 +100,100 @@ export default function AdminHomepage() {
     }
     finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteStudent = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this student?")) return;
+
+    try {
+      const response = await fetch(`http://localhost:8000/students/${id}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        fetchStudents();
+        addToNotifs({
+          bgColor: "#008000",
+          message: "Student deleted successfully!"
+        });
+      } else {
+        addToNotifs({
+          bgColor: "#992020",
+          message: "Failed to delete student"
+        });
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      addToNotifs({
+        bgColor: "#992020",
+        message: "An error occurred while deleting"
+      });
+    }
+  };
+
+  const handleEditClick = (student) => {
+    setFormData({
+      fullName: student.full_name,
+      studentEmail: student.student_email
+    });
+    setEditingStudentId(student.id);
+    setActivePopup('editStudent');
+  };
+
+  const handleUpdateSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`http://localhost:8000/students/${editingStudentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.fullName,
+          email: formData.studentEmail
+        }),
+      });
+
+      if (response.ok) {
+        setFormData({ fullName: '', studentEmail: '' });
+        setEditingStudentId(null);
+        setActivePopup('users');
+        addToNotifs({
+          bgColor: "#008000",
+          message: "Student updated successfully!"
+        });
+      }
+    } catch (error) {
+      console.error("Update error:", error);
+      addToNotifs({
+        bgColor: "#992020",
+        message: "An error occurred while updating"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  handleDeleteLog = async (logId) => {
+    if (!window.confirm("Are you sure you want to delete this log entry?")) return;
+
+    try {
+      const response = await fetch(`http://localhost:8000/attendance/${logId}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        fetchLogs();
+        addToNotifs({
+          bgColor: "#008000",
+          message: "Log entry deleted successfully!"
+        });
+      }
+    } catch (error) {
+      console.error("Delete log error:", error);
+      addToNotifs({
+        bgColor: "#992020",
+        message: "An error occurred while deleting log entry"
+      });
     }
   };
 
@@ -136,13 +233,14 @@ export default function AdminHomepage() {
                   {activePopup === 'users' && 'User Directory'}
                   {activePopup === 'logs' && 'Attendance Logs'}
                   {activePopup === 'register' && 'Student Registration'}
+                  {activePopup === 'editStudent' && 'Edit Student Info'}
                 </h2>
                 <button onClick={closePopup} className="close_btn"><MdClose size={24} /></button>
               </div>
 
               <div className="table_container">
-                {activePopup === 'register' ? (
-                  <form onSubmit={handleRegisterSubmit} className="registration_form">
+                {activePopup === 'register' || activePopup === 'editStudent' ? (
+                  <form onSubmit={activePopup === 'register' ? handleRegisterSubmit : handleUpdateSubmit} className="registration_form">
                     <div className="form_group">
                       <label className="form_label">Full Name</label>
                       <input 
@@ -164,8 +262,13 @@ export default function AdminHomepage() {
                       />
                     </div>
                     <button type="submit" className="submit_btn" disabled={isLoading}>
-                      {isLoading ? 'Processing...' : 'Register Student'}
+                      {isLoading ? 'Processing...' : (activePopup === 'editStudent' ? 'Update Student' : 'Register Student')}
                     </button>
+                    {activePopup === 'editStudent' && (
+                      <button type="button" className="submit_btn" style={{marginTop: '10px', backGroundColor: '#ccc', color: '#333'}} onClick={() => { setActivePopup('users')}}>
+                        Cancel
+                      </button>
+                    )}
                   </form>
                 ) : (
                   <table className="popup_table">
@@ -176,21 +279,30 @@ export default function AdminHomepage() {
                             <th>Student Number</th>
                             <th>Name</th>
                             <th>Student Email</th>
+                            <th>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
                           {isLoading ? (
-                            <tr><td colSpan="3" style={{ textAlign: 'center' }}>Loading students...</td></tr>
+                            <tr><td colSpan="4" style={{ textAlign: 'center' }}>Loading students...</td></tr>
                           ) : students.length > 0 ? (
                             students.map((student) => (
                               <tr key={student.id}>
                                 <td>{student.student_number}</td>
                                 <td>{student.full_name}</td>
                                 <td>{student.student_email}</td>
+                                <td style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                                  <button onClick={() => handleEditClick(student)} style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer' }}>
+                                    <FaEdit size={18} />
+                                  </button>
+                                  <button onClick={() => handleDeleteStudent(student.id)} style={{ background: 'none', border: 'none', color: '#DC3545', cursor: 'pointer' }}>
+                                    <FaTrash size={18} />
+                                  </button>
+                                </td>
                               </tr>
                             ))
                           ) : (
-                            <tr><td colSpan="3" style={{ textAlign: 'center' }}>No students found.</td></tr>
+                            <tr><td colSpan="4" style={{ textAlign: 'center' }}>No students found.</td></tr>
                           )}
                         </tbody>
                       </>
@@ -203,13 +315,14 @@ export default function AdminHomepage() {
                             <th>Student Number</th>
                             <th>Student Email</th>
                             <th>Full Name</th>
+                            <th>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
                           {logs.length > 0 ? (
                             logs.map((log, index) => (
                               <motion.tr 
-                                key={index}
+                                key={log.id || index}
                                 initial={{ backgroundColor: "#e6f7ff" }}
                                 animate={{ backgroundColor: "transparent" }}
                                 transition={{ duration: 2 }}
@@ -219,10 +332,15 @@ export default function AdminHomepage() {
                                 <td>{log.student_number}</td>
                                 <td>{log.student_email}</td>
                                 <td>{log.full_name}</td>
+                                <td style={{ textAlign: 'center' }}>
+                                  <button onClick={() => handleDeleteLog(log.id)} style={{ background: 'none', border: 'none', color: '#DC3545', cursor: 'pointer' }}>
+                                    <FaTrash size={18} />
+                                  </button>
+                                </td>
                               </motion.tr>
                             ))
                           ) : (
-                            <tr><td colSpan="5" style={{textAlign: 'center'}}>Waiting for logs...</td></tr>
+                            <tr><td colSpan="6" style={{textAlign: 'center'}}>Waiting for logs...</td></tr>
                           )}
                         </tbody>
                       </>
