@@ -44,6 +44,12 @@ services:
       - marcusan_network
     volumes:
       - ./mqtt-config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    healthcheck:
+      test: ["CMD", "/usr/bin/mosquitto_pub", "-i", "healthcheck", "-t", "health/check", "-m", "online", "--host", "localhost", "--port", "1883"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
   
   postgres_db:
     image: pgvector/pgvector:pg17
