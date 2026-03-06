@@ -107,7 +107,7 @@ export default function AdminHomepage() {
     if (!window.confirm("Are you sure you want to delete this student?")) return;
 
     try {
-      const response = await fetch(`http://localhost:8000/students/${id}`, {
+      const response = await fetch(`http://localhost:8000/students?id=${id}`, {
         method: 'DELETE',
       });
       if (response.ok) {
@@ -145,7 +145,7 @@ export default function AdminHomepage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`http://localhost:8000/students/${editingStudentId}`, {
+      const response = await fetch(`http://localhost:8000/students?id=${editingStudentId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -178,7 +178,7 @@ export default function AdminHomepage() {
     if (!window.confirm("Are you sure you want to delete this log entry?")) return;
 
     try {
-      const response = await fetch(`http://localhost:8000/attendance/${logId}`, {
+      const response = await fetch(`http://localhost:8000/attendance?id=${logId}`, {
         method: 'DELETE',
       });
       if (response.ok) {
