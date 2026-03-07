@@ -235,7 +235,6 @@ export default function AdminHomepage() {
                   {activePopup === 'register' && 'Student Registration'}
                   {activePopup === 'editStudent' && 'Edit Student Info'}
                 </h2>
-                <button onClick={closePopup} className="close_btn"><MdClose size={24} /></button>
               </div>
 
               <div className="table_container">
@@ -292,10 +291,10 @@ export default function AdminHomepage() {
                                 <td>{student.full_name}</td>
                                 <td>{student.student_email}</td>
                                 <td style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                                  <button onClick={() => handleEditClick(student)} style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer' }}>
+                                  <button onClick={() => handleEditClick(student)} style={{ background: 'none', border: 'none', color: '#5f8ab7', cursor: 'pointer' }}>
                                     <FaEdit size={18} />
                                   </button>
-                                  <button onClick={() => handleDeleteStudent(student.id)} style={{ background: 'none', border: 'none', color: '#DC3545', cursor: 'pointer' }}>
+                                  <button onClick={() => handleDeleteStudent(student.id)} style={{ background: 'none', border: 'none', color: '#894b51', cursor: 'pointer' }}>
                                     <FaTrash size={18} />
                                   </button>
                                 </td>
