@@ -76,7 +76,8 @@ void sendImageToSocket() {
     camera_fb_t *fb = esp_camera_fb_get();
     if (!fb) {
         Serial.println("Image capture failed");
-        return;
+        esp_camera_fb_return(fb);
+        ESP.restart();
     }
 
     wsClient.sendBinary((const char*) fb->buf, fb->len);
