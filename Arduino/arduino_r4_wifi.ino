@@ -27,7 +27,7 @@ MQTTClient mqttClient;
 
 void connectWiFi(bool reconnect = false) {
     Serial.print(reconnect ? "Reconnecting to WiFi" : "Connecting to WiFi");
-    while (WiFi.begin(ssid, password) != WL_CONNECTED) {
+    while (WiFi.status() != WL_CONNECTED) {
         delay(2000);
         Serial.print('.');
     }
@@ -219,6 +219,7 @@ void setup() {
     lcd.backlight();
     lcdPrintReset();
     
+    WiFi.begin(ssid, password);
     connectWiFi();
     
     mqttClient.begin(mqttServer, wifiClient);
