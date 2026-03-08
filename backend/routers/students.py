@@ -23,8 +23,6 @@ async def get_students():
 
 @router.post("")
 async def create_student(request: Request, req_body: CreateStudentRequestBody):
-    request.app.state.mode = "RGSTR"
-
     try:
         new_student_number = DB.insert_student(req_body.name, req_body.email)
     except UniqueViolation as err:
@@ -34,6 +32,7 @@ async def create_student(request: Request, req_body: CreateStudentRequestBody):
         logger.exception(f"Create student w/ email: {req_body.email} [DATABASE ERROR]")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="Internal database error")
     
+    request.app.state.mode = "RGSTR"
     return {"message": "Student registered successfully", "student_number": new_student_number}
 
 
@@ -63,7 +62,6 @@ async def delete_student(id: int):
 
 @router.post("/{student_number}/register-face", status_code=status.HTTP_201_CREATED)
 async def register_face(student_number: str, request: Request):
-    request.app.state.mode = "RGSTR"
     img_bytes = await request.body()
 
     if not img_bytes:

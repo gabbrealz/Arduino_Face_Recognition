@@ -1,9 +1,14 @@
-export default function CameraApp({ streamImage, forRegistration }) {
+import { useEffect } from "react";
+
+export default function CameraApp({ streamImage, showRegistration, setShowRegistration }) {
+  useEffect(() => {
+    setShowRegistration(localStorage.getItem("STUDENT_NUMBER_FROM_REGISTRATION") !== null);
+  }, []);
 
   return (
     <div className="camera-app">
       <div className="header-badge">
-        {forRegistration ? "Register Student" : "Log Attendance"}
+        {showRegistration ? "Register Student" : "Log Attendance"}
       </div>
       <div className="viewfinder">
         {streamImage ? (

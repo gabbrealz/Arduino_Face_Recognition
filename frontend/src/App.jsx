@@ -5,12 +5,12 @@ import Notifications from "./components/Notifications";
 import CameraApp from "./components/CameraApp";
 import PopupOverlay from "./components/PopupOverlay";
 import AdminHomepage from "./pages/AdminHomepage";
-import { NotifContext, RegistrationContext } from "./Contexts";
+import { NotifContext } from "./Contexts";
 import './App.css';
 
 export default function App() {
   const { addToNotifs } = useContext(NotifContext);
-  const { registrationData, setRegistrationData } = useContext(RegistrationContext);
+  const [showRegistration, setShowRegistration] = useState(localStorage.getItem("STUDENT_NUMBER_FROM_REGISTRATION") !== null);
   
   const [capturedImage, setCapturedImage] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
@@ -22,16 +22,11 @@ export default function App() {
   const mqttRef = useRef(null);
 
   const isLoadingRef = useRef(isLoading);
-  const registrationDataRef = useRef(registrationData);
   const streamImageRef = useRef(streamImage);
 
   useEffect(() => {
     isLoadingRef.current = isLoading;
   }, [isLoading]);
-
-  useEffect(() => {
-    registrationDataRef.current = registrationData;
-  }, [registrationData]);
 
 
   useEffect(() => {
@@ -75,10 +70,11 @@ export default function App() {
     setIsLoading(true);
 
     try {
+      const studentNumber = localStorage.getItem("STUDENT_NUMBER_FROM_REGISTRATION");
       const responseFromUrl = await fetch(streamImageRef.current);
       const imageBlob = await responseFromUrl.blob();
 
-      const response = await fetch(`http://localhost:8000/students/${registrationDataRef.current.studentNumber}/register-face`, {
+      const response = await fetch(`http://localhost:8000/students/${studentNumber}/register-face`, {
         method: "POST",
         headers: {
           "Content-Type": "image/jpeg",
@@ -95,7 +91,8 @@ export default function App() {
         bgColor: "#008000",
         message: "Successfully registered student!"
       })
-      setRegistrationData({ forRegistration: false });
+      localStorage.removeItem("STUDENT_NUMBER_FROM_REGISTRATION");
+      setShowRegistration(false);
 
       mqttRef.current.publish("arduino-r4/input", JSON.stringify({
         req: "RGSTR",
@@ -142,7 +139,7 @@ export default function App() {
         if (err) console.error("Subscribe error:", err);
       });
 
-      if (registrationDataRef.current.forRegistration) {
+      if (localStorage.getItem("STUDENT_NUMBER_FROM_REGISTRATION") !== null) {
         mqttClient.publish("fastapi/capture/mode", "RGSTR", { qos: 2 }, (err) => {
           if (err) console.error("Publish error:", err);
         });
@@ -163,7 +160,7 @@ export default function App() {
         setCapturedImage(streamImage);
         setIsLoading(true);
 
-        if (registrationDataRef.current.forRegistration)
+        if (localStorage.getItem("STUDENT_NUMBER_FROM_REGISTRATION") !== null)
           registerFace();
       }
       else if (topic === "frontend/attendance-log/response") {
@@ -225,7 +222,9 @@ export default function App() {
           )}
 
           <Routes>
-            <Route path="/" element={<CameraApp streamImage={streamImage} forRegistration={registrationDataRef.current.forRegistration} />} />
+            <Route path="/"
+              element={<CameraApp streamImage={streamImage} showRegistration={showRegistration} setShowRegistration={setShowRegistration} />}
+            />
             <Route path="/admin" element={<AdminHomepage />} />
           </Routes>
         </main>

@@ -1,10 +1,8 @@
 import { useState, createContext } from "react";
 
 export const NotifContext = createContext();
-export const RegistrationContext = createContext();
 
 export const InterfaceProvider = ({ children }) => {
-  const [registrationData, setRegistrationData] = useState({ forRegistration: false });
   const [notifStack, setNotifStack] = useState([]);
   const addToNotifs = (notif) => {
     setNotifStack((prev) => {
@@ -14,10 +12,8 @@ export const InterfaceProvider = ({ children }) => {
   };
 
   return (
-    <RegistrationContext.Provider value={{registrationData, setRegistrationData}}>
-      <NotifContext.Provider value={{notifStack, addToNotifs, setNotifStack}}>
-        {children}
-      </NotifContext.Provider>
-    </RegistrationContext.Provider>
+    <NotifContext.Provider value={{notifStack, addToNotifs, setNotifStack}}>
+      {children}
+    </NotifContext.Provider>
   );
 };

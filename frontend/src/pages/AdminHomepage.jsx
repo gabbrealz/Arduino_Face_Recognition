@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaUsers, FaClipboardList, FaUserPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import { MdClose } from 'react-icons/md';
-import { RegistrationContext, NotifContext } from '../Contexts';
+import { NotifContext } from '../Contexts';
 import Notifications from '../components/Notifications';
 
 function getDateString(timestampStr) {
@@ -19,7 +19,7 @@ function getTimeString(timestampStr) {
 export default function AdminHomepage() {
   const { addToNotifs } = useContext(NotifContext);
   const navigate = useNavigate();
-  const { setRegistrationData } = useContext(RegistrationContext);
+
   const [activePopup, setActivePopup] = useState(null);
   const [logs, setLogs] = useState([]);
   const [students, setStudents] = useState([]);
@@ -87,10 +87,7 @@ export default function AdminHomepage() {
 
       if (response.ok) {
         closePopup();
-        setRegistrationData({
-          forRegistration: true,
-          studentNumber: data.student_number
-        });
+        localStorage.setItem("STUDENT_NUMBER_FROM_REGISTRATION", data.student_number);
         navigate("/");
       }
 
