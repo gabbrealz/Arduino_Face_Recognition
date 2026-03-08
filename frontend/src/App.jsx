@@ -196,10 +196,26 @@ export default function App() {
     }, 100);
   }, []);
 
+  const [currentTime, setCurrentTime] = useState("");
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      );
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <BrowserRouter>
       <Notifications/>
       <div className="app-layout">
+        <div className="time">{currentTime}</div>
         <main className="main-viewport">
           {isLoading && (
             <div className="loading-overlay">

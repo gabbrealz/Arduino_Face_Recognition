@@ -1,9 +1,10 @@
 export default function CameraApp({ streamImage, forRegistration }) {
+
   return (
     <div className="camera-app">
-      <h2 style={{ margin: "16px", textAlign: "center" }}>
+      <div className="header-badge">
         {forRegistration ? "Register Student" : "Log Attendance"}
-      </h2>
+      </div>
       <div className="viewfinder">
         {streamImage ? (
           <img 
@@ -13,7 +14,7 @@ export default function CameraApp({ streamImage, forRegistration }) {
               width: "100%", 
               height: "100%", 
               objectFit: "cover",
-              display: "block" // Removes bottom whitespace
+              display: "block" 
             }} 
           />
         ) : (

@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { NotifContext } from "../Contexts.jsx";
-import "../Notifications.css"; // Import the CSS file below
+import "../Notifications.css"; 
 
 export default function Notifications() {
   const { notifStack } = useContext(NotifContext);
