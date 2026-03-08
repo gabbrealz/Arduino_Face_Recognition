@@ -70,7 +70,7 @@ def on_message(client, topic, payload, qos, properties):
     logger.info(f"Received on {topic}")
     payload_str = payload.decode("utf-8")
 
-    if topic == "arduino-r4/output" and payload_str == "CLICK":
+    if topic == "arduino-r4/output":
         logger.info("Received message from 'arduino-r4/output'")
 
         app = client._appdata.get("app")

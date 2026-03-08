@@ -158,8 +158,7 @@ void mqttCallback(String &topic, String &payload) {
 
     if (strcmp(request, "ATTND") == 0) {
         requestSent = false;
-        lcd.clear();
-
+        
         if (doc["success"].as<bool>()) {
             lcdPrintSuccess(msg);
             digitalWrite(GREEN_LED, HIGH);
@@ -181,8 +180,7 @@ void mqttCallback(String &topic, String &payload) {
     }
     else if (strcmp(request, "RGSTR") == 0) {
         requestSent = false;
-        lcd.clear();
-
+        
         if (doc["success"].as<bool>()) {
             lcdPrintSuccess(msg);
             digitalWrite(GREEN_LED, HIGH);
