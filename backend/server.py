@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from gmqtt import Client as MQTTClient
 from contextlib import asynccontextmanager
-from time import time, sleep
+from time import time
 import asyncio
 import uvicorn
 import logging
@@ -111,6 +111,7 @@ async def reconnect(client):
 async def lifespan(app: FastAPI):
     app.state.mode = "ATTND"
     app.state.img = None
+    app.state.face_detection_running = False
 
     client = MQTTClient("fastapi-backend")
     client._appdata = {"app": app}

@@ -1,8 +1,12 @@
+import numpy as np
+import cv2
+from deepface import DeepFace
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+import asyncio
+
+from services.image import Image
 from services.connection_manager import stream_manager
 from services.log import logger
-from PIL import Image
-import io
 
 router = APIRouter()
 
@@ -14,24 +18,32 @@ async def streaming_endpoint(websocket: WebSocket):
 
     try:
         while True:
-            message = await websocket.receive()
+            data = await websocket.receive_bytes()
 
-            data = message.get("bytes")
-            if data is not None:
-                # print("Received BYTES")
-                
-                img = Image.open(io.BytesIO(data))
-                img = img.rotate(90, expand=True)
+            # print("Received BYTES")
+            
+            frame = Image.get_decoded_img(data, rotate=True)
+            _, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
 
-                buffer = io.BytesIO()
-                img.save(buffer, format="JPEG")
-                rotated_bytes = buffer.getvalue()
+            if not websocket.app.state.face_detection_running:
+                websocket.app.state.face_detection_running = True
+                asyncio.create_task(alert_if_face_found(websocket.app, frame))
 
-                websocket.app.state.img = rotated_bytes
-                await stream_manager.broadcast_bytes(rotated_bytes, websocket)
+            rotated_bytes = buffer.tobytes()
+            websocket.app.state.img = rotated_bytes
+            await stream_manager.broadcast_bytes(rotated_bytes, websocket)
 
     except (WebSocketDisconnect, RuntimeError):
         logger.info("A websocket connection disconnected")
 
     finally:
         stream_manager.disconnect(websocket)
+
+
+async def alert_if_face_found(app, img):
+    try:
+        faces = await asyncio.to_thread(DeepFace.extract_faces, img, enforce_detection=False, anti_spoofing=True)
+        face_found = any(face["is_real"] for face in faces)
+        app.state.mqtt_client.publish("fastapi/capture/face-found", "T" if face_found > 0 else "F", qos=0)
+    finally:
+        app.state.face_detection_running = False

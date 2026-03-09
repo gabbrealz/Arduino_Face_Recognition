@@ -7,56 +7,56 @@
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
 <style>
-body{
-font-family:Arial;
-background:#111;
-color:white;
-text-align:center;
-}
+  body{
+    font-family:Arial;
+    background:#111;
+    color:white;
+    text-align:center;
+  }
 
-.lcd{
-width:340px;
-margin:auto;
-background:#2c3e2f;
-color:#8aff8a;
-padding:15px;
-font-family:monospace;
-font-size:22px;
-letter-spacing:2px;
-border-radius:6px;
-}
+  .lcd{
+    width:340px;
+    margin:auto;
+    background:#2c3e2f;
+    color:#8aff8a;
+    padding:15px;
+    font-family:monospace;
+    font-size:22px;
+    letter-spacing:2px;
+    border-radius:6px;
+  }
 
-.row{
-height:30px;
-}
+  .row{
+    height:30px;
+  }
 
-.panel{
-margin-top:30px;
-}
+  .panel{
+    margin-top:30px;
+  }
 
-button{
-padding:15px 40px;
-font-size:18px;
-margin-top:20px;
-cursor:pointer;
-}
+  button{
+    padding:15px 40px;
+    font-size:18px;
+    margin-top:20px;
+    cursor:pointer;
+  }
 
-.led{
-width:30px;
-height:30px;
-border-radius:50%;
-display:inline-block;
-margin:10px;
-background:#333;
-}
+  .led{
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    display:inline-block;
+    margin:10px;
+    background:#333;
+  }
 
-.green.on{background:#00ff55;}
-.red.on{background:#ff3333;}
+  .green.on{background:#00ff55;}
+  .red.on{background:#ff3333;}
 
-.status{
-margin-top:20px;
-font-size:18px;
-}
+  .status{
+    margin-top:20px;
+    font-size:18px;
+  }
 </style>
 </head>
 
@@ -65,22 +65,25 @@ font-size:18px;
 <h2>Arduino R4 Attendance Simulator</h2>
 
 <div class="lcd">
-<div id="lcd0" class="row"></div>
-<div id="lcd1" class="row"></div>
+  <div id="lcd0" class="row"></div>
+  <div id="lcd1" class="row"></div>
 </div>
 
 <div class="panel">
-<div id="greenLed" class="led green"></div>
-<div id="redLed" class="led red"></div>
+  <div id="greenLed" class="led green"></div>
+  <div id="redLed" class="led red"></div>
 </div>
 
 <button id="button">PRESS BUTTON</button>
 
 <div class="status">
-MQTT: <span id="mqttStatus">Disconnected</span>
+  MQTT: <span id="mqttStatus">Disconnected</span>
 </div>
 
 <script>
+
+let audioCtx = new AudioContext()
+let alreadyBeeped = false
 
 const broker="ws://localhost:9001"
 
@@ -98,98 +101,98 @@ let loadingStep=0
 let loadingTimestamp=0
 
 function lcdClear(){
-lcd0.textContent=""
-lcd1.textContent=""
+  lcd0.textContent=""
+  lcd1.textContent=""
 }
 
 function lcdReset(){
-lcdClear()
-lcd0.textContent="   Attendance"
-lcd1.textContent="  System Ready"
+  lcdClear()
+  lcd0.textContent="   Attendance"
+  lcd1.textContent="  System Ready"
 }
 
 function lcdSuccess(msg){
-lcdClear()
-lcd0.textContent="    SUCCESS"
-lcd1.textContent=msg
+  lcdClear()
+  lcd0.textContent="    SUCCESS"
+  lcd1.textContent=msg
 }
 
 function lcdError(msg){
-lcdClear()
-lcd0.textContent="     ERROR"
-lcd1.textContent=msg
+  lcdClear()
+  lcd0.textContent="     ERROR"
+  lcd1.textContent=msg
 }
 
 function successTone(){
 
-const ctx=new AudioContext()
+  if(!audioCtx) return
 
-let o=ctx.createOscillator()
-o.frequency.value=1200
-o.connect(ctx.destination)
-o.start()
-setTimeout(()=>o.stop(),150)
+  const o = audioCtx.createOscillator()
+  o.frequency.value=1200
+  o.connect(audioCtx.destination)
+  o.start()
+  setTimeout(()=>o.stop(),150)
 
-setTimeout(()=>{
-let o2=ctx.createOscillator()
-o2.frequency.value=1600
-o2.connect(ctx.destination)
-o2.start()
-setTimeout(()=>o2.stop(),200)
-},200)
+  setTimeout(()=>{
+    let o2=audioCtx.createOscillator()
+    o2.frequency.value=1600
+    o2.connect(audioCtx.destination)
+    o2.start()
+    setTimeout(()=>o2.stop(),200)
+  },200)
 
 }
 
 function errorTone(){
 
-const ctx=new AudioContext()
+  if(!audioCtx) return
 
-let o=ctx.createOscillator()
-o.frequency.value=300
-o.connect(ctx.destination)
-o.start()
-setTimeout(()=>o.stop(),400)
+  const o = audioCtx.createOscillator()
+  o.frequency.value=300
+  o.connect(audioCtx.destination)
+  o.start()
+  setTimeout(()=>o.stop(),400)
 
 }
 
 function green(on){
-greenLed.classList.toggle("on",on)
+  greenLed.classList.toggle("on",on)
 }
 
 function red(on){
-redLed.classList.toggle("on",on)
+  redLed.classList.toggle("on",on)
 }
 
 function updateLoading(){
 
-let now=Date.now()
+  let now=Date.now()
 
-if(now-loadingTimestamp<750) return
+  if(now-loadingTimestamp<750) return
 
-if(now-lastRequestTimestamp>=12000){
-requestSent=false
-lcdError("No response")
+  if(now-lastRequestTimestamp>=12000){
+    requestSent=false
+    lcdError("No response")
 
-setTimeout(()=>{
-lcdReset()
-},5000)
+    setTimeout(()=>{
+      lcdReset()
+    },5000)
 
-return
-}
+    return
+  }
 
-if(loadingStep===0){
-lcd0.textContent="Loading"
-loadingStep++
-}
-else if(loadingStep<4){
-lcd0.textContent+="."
-loadingStep++
-}
-else{
-loadingStep=0
-}
+  if(loadingStep===0){
+    lcd0.textContent="Loading"
+    loadingStep++
+  }
+  else if(loadingStep<4){
+    lcd0.textContent+="."
+    loadingStep++
+  }
+  else{
+    loadingStep=0
+  }
 
-loadingTimestamp=now
+  loadingTimestamp=now
 
 }
 
@@ -197,83 +200,103 @@ const client=mqtt.connect(broker)
 
 client.on("connect",()=>{
 
-mqttStatus.textContent="Connected"
+  mqttStatus.textContent="Connected"
 
-client.subscribe("arduino-r4/input")
+  client.subscribe("arduino-r4/input")
+  client.subscribe("fastapi/capture/face-found")
 
 })
 
 client.on("message",(topic,message)=>{
 
-let payload
+  if(topic==="fastapi/capture/face-found"){
 
-try{
-payload=JSON.parse(message.toString())
-}catch{
-return
-}
+    const value = message.toString()
+    console.log(value)
+    
+    if(value==="T"){
+      green(true)
+      if(!alreadyBeeped){
+        successTone()
+        alreadyBeeped = true
+      }
+    } else {
+      green(false)
+      alreadyBeeped = false
+    }
 
-const req=payload.req
-const msg=payload.msg
+    return
+  }
 
-requestSent=false
+  let payload
 
-if(req==="ATTND" || req==="RGSTR"){
+  try{
+    payload=JSON.parse(message.toString())
+  }catch{
+    return
+  }
 
-if(payload.success){
+  const req=payload.req
+  const msg=payload.msg
 
-lcdSuccess(msg)
+  requestSent=false
 
-green(true)
-successTone()
+  if(req==="ATTND" || req==="RGSTR"){
 
-setTimeout(()=>{
-green(false)
-lcdReset()
-},5000)
+    if(payload.success){
 
-}
-else{
+      lcdSuccess(msg)
 
-lcdError(msg)
+      green(true)
+      successTone()
 
-red(true)
-errorTone()
+      setTimeout(()=>{
+        green(false)
+        lcdReset()
+      },5000)
 
-setTimeout(()=>{
-red(false)
-lcdReset()
-},5000)
+    }
+    else{
 
-}
+      lcdError(msg)
 
-}
+      red(true)
+      errorTone()
+
+      setTimeout(()=>{
+        red(false)
+        lcdReset()
+      },5000)
+
+    }
+
+  }
 
 })
 
 document.getElementById("button").onclick=()=>{
 
-let now=Date.now()
+  let now=Date.now()
 
-if(requestSent) return
+  if(requestSent) return
 
-if(now-lastRequestTimestamp<3000) return
+  if(now-lastRequestTimestamp<3000) return
 
-client.publish("arduino-r4/output","CLICK")
+  client.publish("arduino-r4/output","CLICK")
 
-requestSent=true
-lastRequestTimestamp=now
-loadingStep=0
+  requestSent=true
+  lastRequestTimestamp=now
+  loadingStep=0
 
-lcdClear()
+  lcdClear()
 
 }
 
 setInterval(()=>{
 
-if(requestSent){
-updateLoading()
-}
+  if(requestSent){
+    updateLoading()
+  }
 
 },100)
 
