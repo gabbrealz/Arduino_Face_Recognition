@@ -25,12 +25,12 @@ from database.db import DB
 # =================================================================================================
 # MQTT CLIENT =====================================================================================
 
-async def run_activity(client, img_bytes):
+async def run_activity(client, img):
     arduino_r4_payload = { "req": "ATTND" }
     frontend_payload = { "req": "ATTND" }
 
     try:
-        result = await attendance.log_attendance_for_face_logic(img_bytes)
+        result = await attendance.log_attendance_for_face_logic(img)
     except HTTPException as e:
         arduino_r4_payload["success"] = False
         frontend_payload["success"] = False
@@ -75,11 +75,10 @@ def on_message(client, topic, payload, qos, properties):
 
         app = client._appdata.get("app")
         mode = app.state.mode
-        img_bytes = app.state.img
+        img = app.state.img
 
-        if mode != "ATTND" or img_bytes is None: return
-
-        asyncio.create_task(run_activity(client, img_bytes))
+        if mode != "ATTND" or img is None: return
+        asyncio.create_task(run_activity(client, img))
 
     elif topic == "fastapi/capture/mode":
         logger.info(f"Received message from 'fastapi/capture/mode': {payload_str}")

@@ -22,16 +22,15 @@ async def streaming_endpoint(websocket: WebSocket):
 
             # print("Received BYTES")
             
-            frame = Image.get_decoded_img(data, rotate=True)
-            _, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 95])
+            img = Image.get_decoded_img(data, rotate=True)
+            websocket.app.state.img = img
 
             if not websocket.app.state.face_detection_running:
                 websocket.app.state.face_detection_running = True
-                asyncio.create_task(alert_if_face_found(websocket.app, frame))
+                asyncio.create_task(alert_if_face_found(websocket.app, img))
 
-            rotated_bytes = buffer.tobytes()
-            websocket.app.state.img = rotated_bytes
-            await stream_manager.broadcast_bytes(rotated_bytes, websocket)
+            _, buffer = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 95])
+            await stream_manager.broadcast_bytes(buffer.tobytes(), websocket)
 
     except (WebSocketDisconnect, RuntimeError):
         logger.info("A websocket connection disconnected")
@@ -44,6 +43,6 @@ async def alert_if_face_found(app, img):
     try:
         faces = await asyncio.to_thread(DeepFace.extract_faces, img, enforce_detection=False, anti_spoofing=True)
         face_found = any(face["is_real"] for face in faces)
-        app.state.mqtt_client.publish("fastapi/capture/face-found", "T" if face_found > 0 else "F", qos=0)
+        app.state.mqtt_client.publish("fastapi/capture/face-found", "T" if face_found else "F", qos=0)
     finally:
         app.state.face_detection_running = False

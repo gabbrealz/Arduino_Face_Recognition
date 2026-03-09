@@ -45,19 +45,7 @@ async def delete_attendance_log(id: int):
     return {"message": "Attendance log deleted successfully"}
 
 
-@router.post("", status_code=status.HTTP_200_OK)
-async def log_student_attendance(request: Request):
-    img_bytes = await request.body()
-
-    if not img_bytes:
-        logger.info("Log student attendance [NO IMAGE DATA]")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No image data")
-
-    return await log_attendance_for_face_logic(img_bytes)
-
-async def log_attendance_for_face_logic(img_bytes):
-    img = Image.get_decoded_img(img_bytes)
-    
+async def log_attendance_for_face_logic(img):
     now = time()
     try:
         embedding = await Image.get_embedding(img)
