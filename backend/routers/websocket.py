@@ -23,7 +23,7 @@ async def streaming_endpoint(websocket: WebSocket):
             # print("Received BYTES")
             
             frame = Image.get_decoded_img(data, rotate=True)
-            _, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            _, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 95])
 
             if not websocket.app.state.face_detection_running:
                 websocket.app.state.face_detection_running = True
