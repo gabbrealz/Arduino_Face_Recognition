@@ -48,4 +48,4 @@ export default function PopupOverlay({ image, result, onClose }) {
       )}
       </div>
   );
-}
+} 
