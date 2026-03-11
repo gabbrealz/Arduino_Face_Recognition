@@ -17,6 +17,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [streamImage, setStreamImage] = useState(null);
   const [recognitionResult, setRecognitionResult] = useState(null);
+  const [isFaceDetected, setIsFaceDetected] = useState(false);
 
   const wsRef = useRef(null);
   const mqttRef = useRef(null);
@@ -139,6 +140,10 @@ export default function App() {
         if (err) console.error("Subscribe error:", err);
       });
 
+      mqttClient.subscribe("frontend/attendance-log/face-found", { qos: 0 }, (err) => {
+        if (err) console.error("Subscribe error:", err);
+      });
+
       if (localStorage.getItem("STUDENT_NUMBER_FROM_REGISTRATION") !== null) {
         mqttClient.publish("fastapi/capture/mode", "RGSTR", { qos: 2 }, (err) => {
           if (err) console.error("Publish error:", err);
@@ -168,6 +173,10 @@ export default function App() {
         setIsLoading(false);
         setRecognitionResult(data);
         setShowPopup(true);
+      }
+
+      else if (topic === "frontend/attendance-log/face-found") {
+        setIsFaceDetected(messageStr === "true");
       }
     });
 
@@ -223,7 +232,7 @@ export default function App() {
 
           <Routes>
             <Route path="/"
-              element={<CameraApp streamImage={streamImage} showRegistration={showRegistration} setShowRegistration={setShowRegistration} />}
+              element={<CameraApp streamImage={streamImage} showRegistration={showRegistration} setShowRegistration={setShowRegistration} isFaceDetected={isFaceDetected} />}
             />
             <Route path="/admin" element={<AdminHomepage />} />
           </Routes>

@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 
-export default function CameraApp({ streamImage, showRegistration, setShowRegistration }) {
+export default function CameraApp({ streamImage, showRegistration, setShowRegistration, isFaceDetected }) {
   useEffect(() => {
     setShowRegistration(localStorage.getItem("STUDENT_NUMBER_FROM_REGISTRATION") !== null);
   }, []);
 
   return (
-    <div className="camera-app">
+    <div className={`camera-app ${isFaceDetected ? "face-detected-glow" : ""}`}>
       <div className="header-badge">
         {showRegistration ? "Register Student" : "Log Attendance"}
       </div>
