@@ -140,7 +140,7 @@ export default function App() {
         if (err) console.error("Subscribe error:", err);
       });
 
-      mqttClient.subscribe("frontend/attendance-log/face-found", { qos: 0 }, (err) => {
+      mqttClient.subscribe("fastapi/capture/face-found", { qos: 0 }, (err) => {
         if (err) console.error("Subscribe error:", err);
       });
 
@@ -175,8 +175,8 @@ export default function App() {
         setShowPopup(true);
       }
 
-      else if (topic === "frontend/attendance-log/face-found") {
-        setIsFaceDetected(messageStr === "true");
+      else if (topic === "fastapi/capture/face-found") {
+        setIsFaceDetected(messageStr === "T");
       }
     });
 
