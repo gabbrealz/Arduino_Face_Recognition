@@ -49,5 +49,5 @@ CREATE TABLE public.attendance_logs (
     CONSTRAINT attendance_log_to_student_fkey FOREIGN KEY (student_id)
     REFERENCES public.students(id)
     ON UPDATE CASCADE
-    ON DELETE NO ACTION
+    ON DELETE CASCADE
 );
