@@ -12,7 +12,7 @@ class Image:
 
     @staticmethod
     async def get_embedding(img):
-        result = await asyncio.to_thread(DeepFace.represent, img, model_name="ArcFace", enforce_detection=True)
+        result = await asyncio.to_thread(DeepFace.represent, img, model_name="ArcFace", anti_spoofing=True, enforce_detection=True)
         if (len(result) == 0 or len(result) > 1):
             raise ValueError()
 

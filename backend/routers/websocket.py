@@ -42,7 +42,7 @@ async def streaming_endpoint(websocket: WebSocket):
 async def alert_if_face_found(app, img):
     try:
         faces = await asyncio.to_thread(DeepFace.extract_faces, img, enforce_detection=False, anti_spoofing=True)
-        face_found = any(face["is_real"] for face in faces)
+        face_found = any(face["confidence"] > 0.85 for face in faces)
         app.state.mqtt_client.publish("fastapi/capture/face-found", "T" if face_found else "F", qos=0)
     finally:
         app.state.face_detection_running = False
