@@ -287,8 +287,8 @@ export default function AdminHomepage() {
                                 <td>{student.student_number}</td>
                                 <td>{student.full_name}</td>
                                 <td>{student.student_email}</td>
-                                <td style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                                  <button onClick={() => handleEditClick(student)} style={{ background: 'none', border: 'none', color: '#5f8ab7', cursor: 'pointer' }}>
+                                <td style={{ gap: '15px'}}>
+                                  <button onClick={() => handleEditClick(student)} style={{ background: 'none', border: 'none', color: '#5f8ab7', cursor: 'pointer' , marginRight: '10px'}}>
                                     <FaEdit size={18} />
                                   </button>
                                   <button onClick={() => handleDeleteStudent(student.id)} style={{ background: 'none', border: 'none', color: '#894b51', cursor: 'pointer' }}>

@@ -292,7 +292,7 @@ body {
 }
 
 .popup_content {
-  background: #ffffff5f;
+  background: #151515a3;
   backdrop-filter: blur(12px);
   width: 90%;
   max-width: 700px;
